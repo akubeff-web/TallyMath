@@ -1,0 +1,12 @@
+# Xcode генерируется в CI
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+build/
+.build/
+.swiftpm/
+Packages/MathCore/.build/
+*.ipa
+Payload/
+.DS_Store
