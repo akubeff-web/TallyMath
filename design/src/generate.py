@@ -290,6 +290,17 @@ class Screen:
             "play": f'<path d="M-4 -7 L7 0 L-4 7 Z" fill="{c}"/>',
             "arrow.right": f'<path d="M-7 0 L7 0 M2 -5 L7 0 L2 5" {st}/>',
             "bulb": f'<path d="M-6 3 C-11 -1 -9 -10 0 -10 C9 -10 11 -1 6 3 L5 6 L-5 6 Z" {st}/><path d="M-4 10 L4 10" {st}/>',
+            "pencil": f'<path d="M-8 8 L-7 3 L5 -9 L9 -5 L-3 7 Z M2 -6 L6 -2" {st}/>',
+            "plus": f'<path d="M-7 0 L7 0 M0 -7 L0 7" {st}/>',
+            "link": f'<path d="M-5 5 L6 -6 M-1 -6 L6 -6 L6 1" {st}/>',
+            "book": f'<path d="M0 -6 C-4 -9 -8 -9 -10 -8 L-10 8 C-8 7 -4 7 0 9 C4 7 8 7 10 8 L10 -8 C8 -9 4 -9 0 -6 Z M0 -6 L0 9" {st}/>',
+            "undo": f'<path d="M-7 -2 L-2 -7 M-7 -2 L-2 3 M-7 -2 L3 -2 C7 -2 9 1 9 4 C9 7 7 9 3 9" {st}/>',
+            "redo": f'<path d="M7 -2 L2 -7 M7 -2 L2 3 M7 -2 L-3 -2 C-7 -2 -9 1 -9 4 C-9 7 -7 9 -3 9" {st}/>',
+            "trash": f'<path d="M-8 -6 L8 -6 M-3 -6 L-3 -9 L3 -9 L3 -6 M-6 -6 L-5 9 L5 9 L6 -6" {st}/>',
+            "eye": f'<path d="M-10 0 C-6 -7 6 -7 10 0 C6 7 -6 7 -10 0 Z" {st}/><circle r="3" fill="{c}"/>',
+            "chevron.down": f'<path d="M-7 -3 L0 4 L7 -3" {st}/>',
+            "chevron.up": f'<path d="M-7 3 L0 -4 L7 3" {st}/>',
+            "question": f'<circle r="11" {st} stroke-dasharray="3 3"/><path d="M-3.5 -3 C-3.5 -7 3.5 -7 3.5 -3 C3.5 0 0 0 0 3" {st}/><circle cy="7" r="1.4" fill="{c}"/>',
         }[name]
         self.items.append(f'<g transform="translate({cx} {cy}) scale({s})">{g}</g>')
 
@@ -331,7 +342,10 @@ def home(theme):
     t = s.t
     s.background()
     s.status_bar()
-    # Toolbar: системная стеклянная кнопка настроек.
+    # Toolbar: «Свой пример» и настройки.
+    s.glass(s.capsule(190, 58, 129, 44))
+    s.icon("plus", 210, 80, 0.85)
+    s.text(264, 85, "Свой пример", 14, 600, anchor="middle")
     s.glass(s.capsule(329, 58, 44, 44))
     s.icon("gear", 351, 80)
     s.text(20, 142, "Tally", 34, 700)
@@ -377,13 +391,7 @@ def home(theme):
     s.glass(s.capsule(20, 688, 353, 58), prominent=True)
     s.text(196.5, 723, "Начать · 10 примеров", 18, 600, t["prom_text"], "middle")
 
-    # Tab bar iOS 26: плавающая стеклянная капсула.
-    s.glass(s.capsule(56, 762, 281, 62))
-    s.raw(f'<path d="{s.capsule(62, 768, 136, 50)}" fill="{t["ink"]}" fill-opacity="0.09"/>')
-    s.icon("grid", 130, 784, 0.95)
-    s.text(130, 810, "Тренировка", 11, 600, anchor="middle")
-    s.icon("chart", 266, 784, 0.95, t["sub"])
-    s.text(266, 810, "Статистика", 11, 500, t["sub"], "middle")
+    tab_bar(s, 0)
     s.home_indicator()
     return s
 
@@ -856,15 +864,17 @@ def learning_sheet():
 
 
 def tab_bar(s, active):
+    """Плавающий стеклянный таб-бар iOS 26: Тренировка, Курс, Статистика."""
     t = s.t
-    s.glass(s.capsule(56, 762, 281, 62))
-    x = 62 if active == 0 else 195
-    s.raw(f'<path d="{s.capsule(x, 768, 136, 50)}" fill="{t["ink"]}" fill-opacity="0.09"/>')
-    c0, c1 = (t["ink"], t["sub"]) if active == 0 else (t["sub"], t["ink"])
-    s.icon("grid", 130, 784, 0.95, c0)
-    s.text(130, 810, "Тренировка", 11, 600 if active == 0 else 500, c0, "middle")
-    s.icon("chart", 266, 784, 0.95, c1)
-    s.text(266, 810, "Статистика", 11, 600 if active == 1 else 500, c1, "middle")
+    s.glass(s.capsule(36, 762, 321, 62))
+    tabs = [("grid", "Тренировка"), ("book", "Курс"), ("chart", "Статистика")]
+    for i, (ic, lab) in enumerate(tabs):
+        cx = 92 + i * 104.5
+        if i == active:
+            s.raw(f'<path d="{s.capsule(cx-48, 768, 96, 50)}" fill="{t["ink"]}" fill-opacity="0.09"/>')
+        c = t["ink"] if i == active else t["sub"]
+        s.icon(ic, cx, 784, 0.95, c)
+        s.text(cx, 810, lab, 11, 600 if i == active else 500, c, "middle")
 
 
 def error_rate(a, b):
@@ -936,7 +946,7 @@ def stats_tab(theme):
         s.text(40, y + 34, "«не понял» ×3" if weak else "", 12, 500, t["sub"])
 
     fade_bottom(s, 712)
-    tab_bar(s, 1)
+    tab_bar(s, 2)
     s.home_indicator()
     return s
 
@@ -1057,6 +1067,462 @@ def stats_sheet():
           "Статистика", "screens-stats.svg")
 
 
+MONO = "'SF Mono',Menlo,'DejaVu Sans Mono',monospace"
+
+
+def math_row(s, x0, yc, items, size=22, color=None):
+    """Строка записи: дроби «столбиком», знаки и текст. yc — уровень черты дроби.
+
+    Элементы: ("f", верх, низ, {опции}) | ("o", знак) | ("t", текст).
+    Опции дроби: ann — пометка множителя («×2»), active — "num"/"den" для поля с курсором.
+    """
+    t = s.t
+    c = color or t["ink"]
+    top = yc - size - 6
+    x = x0
+    for it in items:
+        kind = it[0]
+        if kind == "f":
+            num, den = it[1], it[2]
+            opt = it[3] if len(it) > 3 else {}
+            w = max(len(num), len(den), 1) * size * 0.62 + 10
+            cx = x + w / 2
+            if num:
+                s.text(cx, top + size * 0.82, num, size, 700, c, "middle")
+            s.raw(f'<path d="M{x+2} {yc} L{x+w-2} {yc}" stroke="{c}" stroke-width="{size/13:.1f}" stroke-linecap="round"/>')
+            if den:
+                s.text(cx, yc + 6 + size * 0.82, den, size, 700, c, "middle")
+            act = opt.get("active")
+            if act:
+                by = top - 2 if act == "num" else yc + 4
+                s.raw(f'<path d="{s.rr(x-2, by, w+4, size+6, 7)}" fill="none" stroke="{c}" stroke-width="2"/>')
+                s.raw(f'<rect x="{cx + (6 if (num if act == "num" else den) else 0) - 1}" y="{by+5}" width="2" height="{size-4}" rx="1" fill="{c}"/>')
+            if opt.get("ann"):
+                # Дополнительный множитель над дробью, как пишут в тетради.
+                ax = x + w + 2
+                s.text(ax, top + 4, opt["ann"], 12.5, 700, c)
+                s.raw(f'<path d="M{ax-2} {top+8} L{ax+26} {top+8}" stroke="{c}" stroke-width="1.2"/>')
+                w += 24
+            x += w + 6
+        elif kind == "o":
+            ow = size * 0.85
+            s.text(x + ow / 2, yc + size * 0.33, it[1], size * 0.95, 500, c, "middle")
+            x += ow + 6
+        else:
+            s.text(x, yc + size * 0.33, it[1], size, 600, c)
+            x += len(it[1]) * size * 0.56 + 6
+    return x
+
+
+def status(s, cx, cy, kind):
+    """Статус строки без цвета: заливка, контур, пунктир и значок."""
+    t = s.t
+    if kind == "ok":
+        s.raw(f'<circle cx="{cx}" cy="{cy}" r="12" fill="{t["ink"]}"/>')
+        s.icon("check", cx, cy, 0.62, t["bg"], 3)
+    elif kind == "reduce":
+        s.raw(f'<circle cx="{cx}" cy="{cy}" r="11.5" fill="none" stroke="{t["ink"]}" stroke-width="2"/>')
+        s.icon("check", cx, cy, 0.62, t["ink"], 3)
+    elif kind == "wrong":
+        s.raw(f'<circle cx="{cx}" cy="{cy}" r="12" fill="{t["prom_text"]}"/>')
+        s.icon("xmark", cx, cy, 0.6, t["prom_fill"], 3)
+    elif kind == "unknown":
+        s.icon("question", cx, cy, 1.0, t["ink"], 2)
+
+
+def notebook_card(s, y0, y1):
+    """Карточка-тетрадь: лёгкая клетка, чтобы запись читалась как на бумаге."""
+    t = s.t
+    pid = s.uid("grid")
+    s.defs.append(f'<pattern id="{pid}" width="16" height="16" patternUnits="userSpaceOnUse">'
+                  f'<path d="M16 0 L0 0 L0 16" fill="none" stroke="{t["ink"]}" stroke-opacity="0.07" stroke-width="1"/></pattern>')
+    d = s.rr(20, y0, 353, y1 - y0, 26)
+    s.card(d)
+    s.raw(f'<path d="{d}" fill="url(#{pid})"/>')
+
+
+def solve_top(s, mode):
+    t = s.t
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(176, 86, "Решаю сам", 17, 600, anchor="middle")
+    s.glass(s.capsule(263, 58, 110, 44))
+    s.icon("pencil", 285, 80, 0.85)
+    s.text(332, 85, "Черновик", 14, 600, anchor="middle")
+    s.glass(s.capsule(20, 112, 353, 38))
+    for i, lab in enumerate(["По шагам", "Быстрый"]):
+        x = 24 + i * 172.5
+        if i == mode:
+            s.raw(f'<path d="{s.capsule(x, 116, 172.5, 30)}" fill="{t["prom_fill"]}"/>')
+        s.text(x + 86, 136, lab, 14, 600, t["prom_text"] if i == mode else t["ink"], "middle")
+
+
+def key_strip(s, y, keys):
+    """Верхняя полоса особых клавиш; ширины подобраны под подписи."""
+    total = 353 - 4 * (len(keys) - 1)
+    ws = [len(k) for k in keys]
+    k_unit = total / sum(max(w, 2) + 2 for w in ws)
+    x = 20
+    for k in keys:
+        w = (max(len(k), 2) + 2) * k_unit
+        s.glass(s.capsule(x, y, w, 34))
+        s.text(x + w / 2, y + 22, k, 14, 600, anchor="middle")
+        x += w + 4
+
+
+def frac_key_icon(s, cx, cy, mixed=False):
+    t = s.t
+    if mixed:
+        s.raw(f'<rect x="{cx-13}" y="{cy-8}" width="9" height="16" rx="2.5" fill="none" stroke="{t["ink"]}" stroke-width="1.8"/>')
+        cx += 5
+    s.raw(f'<rect x="{cx-5}" y="{cy-12}" width="10" height="9" rx="2.5" fill="none" stroke="{t["ink"]}" stroke-width="1.8"/>'
+          f'<path d="M{cx-7} {cy} L{cx+7} {cy}" stroke="{t["ink"]}" stroke-width="2" stroke-linecap="round"/>'
+          f'<rect x="{cx-5}" y="{cy+3}" width="10" height="9" rx="2.5" fill="none" stroke="{t["ink"]}" stroke-width="1.8"/>')
+
+
+def keys5(s, y0, rows):
+    """Сетка 5×4 стеклянных клавиш. Особые клавиши: frac, mixed, delete."""
+    kw, kh, g = (353 - 32) / 5, 44, 7
+    for r, row in enumerate(rows):
+        for c, k in enumerate(row):
+            x, y = 20 + c * (kw + 8), y0 + r * (kh + g)
+            s.glass(s.rr(x, y, kw, kh, 15))
+            cx, cy = x + kw / 2, y + kh / 2
+            if k == "frac":
+                frac_key_icon(s, cx, cy)
+            elif k == "mixed":
+                frac_key_icon(s, cx, cy, True)
+            elif k == "delete":
+                s.icon("delete", cx, cy, 0.95)
+            else:
+                s.text(cx, cy + 8, k, 22 if len(k) < 3 else 15, 500, anchor="middle")
+
+
+def check_buttons(s):
+    t = s.t
+    s.glass(s.capsule(20, 766, 160, 52))
+    s.text(100, 798, "Проверить шаг", 15, 600, anchor="middle")
+    s.glass(s.capsule(190, 766, 183, 52), prominent=True)
+    s.icon("check", 210, 792, 0.9, t["prom_text"], 2.6)
+    s.text(294, 798, "Проверить всё", 16, 600, t["prom_text"], "middle")
+
+
+KB56 = [["7", "8", "9", "frac", "delete"], ["4", "5", "6", "+", "−"],
+        ["1", "2", "3", "×", ":"], [",", "0", "=", "(", ")"]]
+
+
+def solve_steps(theme):
+    s = Screen(theme, f"solve-{theme}")
+    t = s.t
+    s.background()
+    solve_top(s, 0)
+    notebook_card(s, 162, 505)
+    s.text(40, 186, "Пример · 6 класс · дроби", 13, 600, t["sub"])
+    s.raw(bit("idle", theme, 342, 192, 0.14))
+    math_row(s, 70, 228, [("f", "1", "3", {"ann": "×2"}), ("o", "+"), ("f", "1", "6")])
+    status(s, 46, 294, "ok")
+    math_row(s, 70, 294, [("o", "="), ("f", "2", "6"), ("o", "+"), ("f", "1", "6")])
+    status(s, 46, 360, "ok")
+    math_row(s, 70, 360, [("o", "="), ("f", "3", "6")])
+    # Активная строка: дробь-шаблон, курсор в знаменателе.
+    s.raw(f'<circle cx="46" cy="426" r="5" fill="{t["ink"]}" fill-opacity="0.35"/>')
+    math_row(s, 70, 426, [("o", "="), ("f", "1", "", {"active": "den"})])
+    s.glass(s.capsule(40, 462, 92, 32))
+    s.icon("plus", 60, 478, 0.7)
+    s.text(96, 483, "шаг", 14, 600, anchor="middle")
+    s.text(353, 483, "строка 3 из 3", 12.5, 500, t["sub"], "end")
+
+    key_strip(s, 517, ["смеш.", "aⁿ", "%", "a : b", "|x|", "×n"])
+    keys5(s, 559, KB56)
+    check_buttons(s)
+    s.home_indicator()
+    return s
+
+
+def solve_error(theme):
+    s = Screen(theme, f"solveerr-{theme}")
+    t = s.t
+    s.background()
+    solve_top(s, 0)
+    notebook_card(s, 162, 340)
+    s.text(40, 186, "Пример · 6 класс · дроби", 13, 600, t["sub"])
+    math_row(s, 70, 228, [("f", "1", "3"), ("o", "+"), ("f", "1", "6")])
+    # Первая ошибочная строка: инверсия всей строки и крестик.
+    s.raw(f'<path d="{s.rr(30, 256, 333, 70, 18)}" fill="{t["prom_fill"]}"/>')
+    status(s, 52, 291, "wrong")
+    math_row(s, 76, 291, [("o", "="), ("f", "2", "3"), ("o", "+"), ("f", "1", "6")], color=t["prom_text"])
+    s.text(343, 296, "строка 1", 12.5, 600, t["prom_text"], "end", 0.7)
+
+    # Bit указывает на ошибку, но не показывает решение.
+    s.raw(bit("hint", theme, 52, 386, 0.22))
+    s.card(s.rr(110, 356, 263, 62, 20))
+    s.text(126, 382, "Умножил только верх.", 16, 700)
+    s.text(126, 404, "Исправь строку 1.", 13.5, 500, t["sub"])
+    s.raw(f'<path d="M110 372 C90 360 70 345 60 330" fill="none" stroke="{t["ink"]}" stroke-width="1.6" stroke-dasharray="4 4"/>'
+          f'<path d="M55 337 L60 330 L67 334" fill="none" stroke="{t["ink"]}" stroke-width="1.6" stroke-linecap="round"/>')
+    s.glass(s.capsule(20, 432, 150, 44))
+    s.icon("bulb", 44, 454, 0.85)
+    s.text(106, 459, "Подсказка", 15, 600, anchor="middle")
+    s.glass(s.capsule(180, 432, 193, 44))
+    s.icon("eye", 204, 454, 0.85)
+    s.text(288, 459, "Показать решение", 15, 600, anchor="middle")
+    s.text(196.5, 500, "Решение скрыто, пока не попросишь", 12.5, 500, t["sub"], "middle")
+
+    key_strip(s, 517, ["смеш.", "aⁿ", "%", "a : b", "|x|", "×n"])
+    keys5(s, 559, KB56)
+    check_buttons(s)
+    s.home_indicator()
+    return s
+
+
+def solve_algebra(theme):
+    s = Screen(theme, f"solvealg-{theme}")
+    t = s.t
+    s.background()
+    solve_top(s, 1)
+    notebook_card(s, 162, 470)
+    s.text(40, 186, "Пример · 8 класс · квадратные уравнения", 13, 600, t["sub"])
+    s.text(70, 222, "x² − 5x + 6 = 0", 22, 700)
+    rows = [("ok", "D = 25 − 24 = 1", None),
+            ("unknown", "по Виета: подбираю 2 и 3", "не удалось проверить этот шаг"),
+            ("ok", "x₁ = 2 или x₂ = 3", "ответ верный, порядок любой")]
+    for i, (st, txt, note) in enumerate(rows):
+        y = 262 + i * 58
+        status(s, 46, y - 7, st)
+        s.text(70, y, txt, 21 if st != "unknown" else 17, 600 if st != "unknown" else 500)
+        if note:
+            s.text(70, y + 22, note, 12.5, 500, t["sub"])
+    s.raw(f'<path d="{s.capsule(283, 360, 70, 24)}" fill="{t["prom_fill"]}"/>')
+    s.text(318, 377, "Ответ", 12.5, 700, t["prom_text"], "middle")
+    s.glass(s.capsule(40, 422, 92, 32))
+    s.icon("plus", 60, 438, 0.7)
+    s.text(96, 443, "шаг", 14, 600, anchor="middle")
+
+    s.text(20, 498, "Набор 7–8 класс", 13, 600, t["sub"])
+    key_strip(s, 510, ["или", "x₁", "a⁻ⁿ", "нет решений", "любое число"])
+    keys5(s, 552, [["x", "y", "x²", "aⁿ", "√"], ["(", ")", "[", "]", ";"],
+                    ["<", ">", "≤", "≥", "∪"], ["123", "frac", "{", "±", "delete"]])
+    # Клавиша системы уравнений — фигурная скобка с двумя строками; подпись поясняет.
+    check_buttons(s)
+    s.home_indicator()
+    return s
+
+
+def custom_example(theme):
+    s = Screen(theme, f"custom-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(196.5, 86, "Свой пример", 17, 600, anchor="middle")
+
+    notebook_card(s, 116, 236)
+    s.text(40, 140, "Пример из домашки", 13, 600, t["sub"])
+    end = math_row(s, 70, 194, [("f", "3", "4"), ("o", "−"), ("f", "2", "3"), ("o", "=")], 28)
+    s.text(end + 2, 205, "?", 28, 700, t["faint"])
+    s.glass(s.capsule(283, 128, 76, 30))
+    s.text(321, 148, "Изменить", 12.5, 600, anchor="middle")
+
+    s.card(s.rr(20, 248, 353, 182, 26))
+    s.text(40, 274, "Нашёл тему", 13, 600, t["sub"])
+    s.text(40, 300, "6 класс · Вычитание дробей", 17, 700)
+    s.text(40, 322, "с разным низом", 17, 700)
+    s.raw(f'<path d="M40 342 L353 342" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+    s.text(40, 370, "Ответ", 15, 500, t["sub"])
+    s.glass(s.capsule(209, 349, 144, 34))
+    s.icon("eye", 231, 366, 0.8)
+    s.text(292, 371, "Показать", 14, 600, anchor="middle")
+    s.text(40, 408, "Решение: 4 шага · общий низ 12", 14, 500, t["sub"])
+
+    s.raw(bit("hint", theme, 52, 476, 0.2))
+    s.card(s.rr(106, 448, 267, 58, 20))
+    s.text(122, 472, "По этой теме есть урок.", 15, 600)
+    s.text(122, 492, "Повторить перед решением?", 13.5, 500, t["sub"])
+    s.glass(s.capsule(20, 520, 353, 44))
+    s.icon("book", 128, 542, 0.85)
+    s.text(212, 547, "Повторить урок", 15, 600, anchor="middle")
+
+    s.raw(f'<path d="{s.rr(20, 580, 353, 64, 18)}" fill="none" stroke="{t["ink"]}" stroke-opacity="0.45" stroke-width="1.3" stroke-dasharray="4 4"/>')
+    s.icon("question", 46, 612, 0.9)
+    s.text(68, 607, "Если пример не поддерживается,", 13.5, 600)
+    s.text(68, 626, "скажу прямо и назову причину.", 13.5, 500, t["sub"])
+
+    s.glass(s.capsule(20, 702, 353, 52))
+    s.text(196.5, 734, "Полное решение", 16, 600, anchor="middle")
+    s.glass(s.capsule(20, 764, 353, 54), prominent=True)
+    s.icon("pencil", 114, 791, 0.95, t["prom_text"])
+    s.text(206, 797, "Решить самому", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def course_tab(theme):
+    s = Screen(theme, f"course-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.glass(s.capsule(234, 58, 139, 44))
+    s.icon("plus", 254, 80, 0.85)
+    s.text(313, 85, "Свой пример", 14, 600, anchor="middle")
+    s.text(20, 142, "Курс", 34, 700)
+    s.glass(s.capsule(20, 160, 353, 38))
+    w = (353 - 8) / 5
+    for i, lab in enumerate(["Все", "5", "6", "7", "8"]):
+        x = 24 + i * w
+        if i == 0:
+            s.raw(f'<path d="{s.capsule(x, 164, w, 30)}" fill="{t["prom_fill"]}"/>')
+        s.text(x + w / 2, 184, lab, 14, 600, t["prom_text"] if i == 0 else t["ink"], "middle")
+
+    sections = [("5 КЛАСС", [("Натуральные числа", .9), ("Обыкновенные дроби", .7), ("Десятичные дроби", .6)]),
+                ("6 КЛАСС", [("НОД и НОК", .5), ("Проценты", .72), ("Отрицательные числа", .3)]),
+                ("7 КЛАСС", [("Линейные уравнения", .2), ("Сокращённое умножение", .0)])]
+    y = 226
+    for name, rows in sections:
+        s.text(20, y, name, 13, 600, t["sub"])
+        s.card(s.rr(20, y + 10, 353, 48 * len(rows), 22))
+        for i, (topic, prog) in enumerate(rows):
+            ry = y + 10 + i * 48
+            if i:
+                s.raw(f'<path d="M40 {ry} L353 {ry}" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+            s.text(40, ry + 30, topic, 15.5, 600)
+            # Освоение темы — короткая полоса, без цвета.
+            s.raw(f'<rect x="300" y="{ry+21}" width="40" height="6" rx="3" fill="{t["ink"]}" fill-opacity="0.1"/>')
+            if prog:
+                s.raw(f'<rect x="300" y="{ry+21}" width="{40*prog:.0f}" height="6" rx="3" fill="{t["ink"]}"/>')
+            s.icon("chevron.left", 355, ry + 24, 0.55, t["faint"])
+            s.items[-1] = s.items[-1].replace("scale(0.55)", "scale(-0.55 0.55)")
+        y += 10 + 48 * len(rows) + 32
+    fade_bottom(s, 690)
+    tab_bar(s, 1)
+    s.home_indicator()
+    return s
+
+
+def topic_card(theme):
+    s = Screen(theme, f"tcard-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(20, 146, "Проценты", 30, 700)
+    s.text(20, 168, "6 класс · точность 72%", 14, 500, t["sub"])
+    s.raw(bit("idle", theme, 340, 138, 0.16))
+
+    s.glass(s.capsule(20, 182, 92, 40), prominent=True)
+    s.text(66, 207, "Урок", 15, 600, t["prom_text"], "middle")
+    s.glass(s.capsule(120, 182, 120, 40))
+    s.text(180, 207, "Тренировать", 14, 600, anchor="middle")
+    s.glass(s.capsule(248, 182, 125, 40))
+    s.text(310.5, 207, "Решить самому", 14, 600, anchor="middle")
+
+    s.card(s.rr(20, 234, 353, 534, 26))
+    s.text(40, 262, "Зачем это нужно", 17, 700)
+    s.icon("chevron.up", 350, 256, 0.75)
+    s.raw(f'<path d="{s.capsule(40, 278, 76, 28)}" fill="{t["prom_fill"]}"/>')
+    s.text(78, 297, "Нужно", 14, 700, t["prom_text"], "middle")
+    s.text(128, 290, "Скидки, прогресс, доли экрана.", 13.5, 600)
+    s.text(128, 308, "База для статистики в 8 классе.", 13.5, 500, t["sub"])
+    s.text(40, 334, "Оценка: в найденных обсуждениях проценты —", 12.5, 500, t["sub"])
+    s.text(40, 351, "одна из немногих тем, что встречается в вебе.", 12.5, 500, t["sub"])
+
+    s.text(40, 380, "В ПРОГРАММИРОВАНИИ", 12, 600, t["sub"])
+    s.raw(f'<path d="{s.rr(40, 390, 313, 58, 14)}" fill="{t["ink"]}" fill-opacity="0.06"/>')
+    for i, line in enumerate(["let price = 1200", "let sale = price * 15 / 100  // 180"]):
+        s.raw(f'<text x="54" y="{414 + i * 20}" font-family="{MONO}" font-size="12.5" fill="{t["ink"]}">{line}</text>')
+
+    s.text(40, 478, "ЧТО ГОВОРЯТ ЛЮДИ", 12, 600, t["sub"])
+    srcs = [("Хабр Q&amp;A · проверено 13.11.2026",
+             ["За пять лет в вебе математика нужна была", "в основном для скидок и суммы корзины."]),
+            ("Хабр Q&amp;A · проверено 13.11.2026",
+             ["Мнения расходятся: одним хватает арифметики,", "другие — про сложные проценты и статистику."]),
+            ("inventwithpython.com · проверено 13.11.2026",
+             ["Хватает арифметики; процент — умножение", "на десятичную дробь: 54% от 279 = 0,54 × 279."])]
+    for i, (site, lines) in enumerate(srcs):
+        y = 494 + i * 76
+        if i:
+            s.raw(f'<path d="M40 {y-6} L353 {y-6}" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+        s.text(40, y + 14, site, 12.5, 700)
+        s.icon("link", 346, y + 9, 0.7)
+        for j, line in enumerate(lines):
+            s.text(40, y + 34 + j * 18, line, 13, 500, t["sub"])
+    s.text(196.5, 748, "Мнения людей субъективны, это не истина.", 11.5, 500, t["sub"], "middle")
+    s.home_indicator()
+    return s
+
+
+def scratchpad(theme):
+    s = Screen(theme, f"draft-{theme}")
+    t = s.t
+    # Черновик — холст PencilKit на весь экран, клетка для удобства.
+    s.raw(f'<rect width="{PW}" height="{PH}" fill="{t["base"]}"/>')
+    pid = s.uid("grid")
+    s.defs.append(f'<pattern id="{pid}" width="20" height="20" patternUnits="userSpaceOnUse">'
+                  f'<path d="M20 0 L0 0 L0 20" fill="none" stroke="{t["ink"]}" stroke-opacity="0.08"/></pattern>'
+                  f'<filter id="{s.sid}-hand"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/>'
+                  f'<feDisplacementMap in="SourceGraphic" scale="5"/></filter>')
+    s.raw(f'<rect width="{PW}" height="{PH}" fill="url(#{pid})"/>')
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(196.5, 80, "Черновик", 17, 600, anchor="middle")
+    s.text(196.5, 98, "не проверяется", 12, 500, t["sub"], "middle")
+    s.glass(s.capsule(255, 58, 118, 44))
+    s.icon("undo", 280, 80, 0.85)
+    s.icon("redo", 314, 80, 0.85)
+    s.icon("trash", 350, 80, 0.85)
+
+    # Наброски «от руки»: обычная запись, искажённая фильтром.
+    start = len(s.items)
+    math_row(s, 60, 220, [("f", "1", "3"), ("o", "+"), ("f", "1", "6"), ("o", "=")], 34)
+    s.raw(f'<path d="M78 268 C110 330 200 330 232 270" fill="none" stroke="{t["ink"]}" stroke-width="2.4" stroke-linecap="round"/>'
+          f'<path d="M222 274 L232 270 L234 281" fill="none" stroke="{t["ink"]}" stroke-width="2.4" stroke-linecap="round"/>')
+    s.text(140, 345, "6 : 3 = 2", 26, 500)
+    math_row(s, 60, 440, [("f", "2", "6"), ("o", "+"), ("f", "1", "6"), ("o", "="), ("f", "3", "6")], 34)
+    s.raw(f'<ellipse cx="220" cy="438" rx="32" ry="52" fill="none" stroke="{t["ink"]}" stroke-width="2.2"/>')
+    s.text(222, 540, "÷ 3 →  1/2", 28, 500)
+    s.raw(f'<path d="M210 556 Q280 566 352 552" fill="none" stroke="{t["ink"]}" stroke-width="2"/>')
+    hand = "".join(s.items[start:])
+    del s.items[start:]
+    s.raw(f'<g filter="url(#{s.sid}-hand)" font-style="italic">{hand}</g>')
+
+    # Палитра инструментов PencilKit (в iOS 26 — стеклянная).
+    s.glass(s.capsule(30, 732, 333, 70))
+    tools = [("pen", True), ("pencil", False), ("marker", False), ("eraser", False), ("lasso", False)]
+    for i, (name, sel) in enumerate(tools):
+        x = 62 + i * 46
+        lift = -8 if sel else 0
+        body = s.rr(x - 10, 748 + lift, 20, 50, 6)
+        s.raw(f'<path d="{body}" fill="{t["card"]}" stroke="{t["ink"]}" stroke-opacity="0.35"/>')
+        if name == "eraser":
+            s.raw(f'<rect x="{x-10}" y="{748+lift}" width="20" height="12" rx="6" fill="{t["ink"]}" fill-opacity="0.25"/>')
+        elif name == "lasso":
+            s.raw(f'<ellipse cx="{x}" cy="{758+lift}" rx="7" ry="5" fill="none" stroke="{t["ink"]}" stroke-width="1.5" stroke-dasharray="2 2"/>')
+        else:
+            tip = {"pen": 4, "pencil": 6, "marker": 9}[name]
+            s.raw(f'<path d="M{x-10} {760+lift} L{x-tip/2} {744+lift} L{x+tip/2} {744+lift} L{x+10} {760+lift} Z" fill="{t["ink"]}"/>')
+    s.raw(f'<circle cx="312" cy="767" r="13" fill="{t["ink"]}" stroke="{t["card"]}" stroke-width="3"/>')
+    s.raw(f'<circle cx="312" cy="767" r="16" fill="none" stroke="{t["ink"]}" stroke-opacity="0.4"/>')
+    s.icon("plus", 344, 767, 0.75)
+    s.home_indicator()
+    return s
+
+
+def solve_sheet():
+    sheet([solve_steps, solve_error, solve_algebra, custom_example],
+          ["«Решаю сам»: по шагам, клавиатура 5–6", "Ошибочный шаг: Bit указывает, решение скрыто",
+           "Клавиатура 7–8: x, степень, корень, промежутки", "«Свой пример»: тема найдена, ответ скрыт"],
+          "Решаю сам", "screens-solve.svg")
+
+
+def course_sheet():
+    sheet([course_tab, topic_card, scratchpad],
+          ["Вкладка «Курс»: все темы 5–8", "Карточка темы: «Зачем это нужно»", "Черновик (PencilKit)"],
+          "Курс", "screens-course.svg")
+
+
 def sheet(fns, labels, name, filename):
     M, GAP, HEAD = 70, 60, 130
     W = M * 2 + PW * len(fns) + GAP * (len(fns) - 1)
@@ -1090,4 +1556,6 @@ if __name__ == "__main__":
     screens_sheet()
     learning_sheet()
     stats_sheet()
+    solve_sheet()
+    course_sheet()
     print("ok")
