@@ -23,6 +23,10 @@ def ios_version(runtime_id):
 
 devices = json.loads(simctl("list", "devices", "available", "-j").stdout)["devices"]
 
+# В лог — какие модели iPhone реально есть в этом Xcode, чтобы ничего не угадывать.
+types = json.loads(simctl("list", "devicetypes", "-j").stdout)["devicetypes"]
+print("Модели iPhone в Xcode: " + ", ".join(t["name"] for t in types if t["name"].startswith("iPhone")), file=sys.stderr)
+
 # 1. Готовый iPhone 13 Pro Max с iOS ≥ 26.
 best = None
 for runtime, items in devices.items():
@@ -54,7 +58,7 @@ for r in ios:
         print(f"Симулятор: создан {WANTED} {r['name']}", file=sys.stderr)
         sys.exit(0)
 
-# 3. Запасной вариант: обычный iPhone (не Pro, не Plus, не SE).
+# 3. Запасной вариант: ближайший по размеру экрана — «Pro Max» на свежей iOS, иначе любой iPhone.
 fallback = None
 for runtime, items in devices.items():
     v = ios_version(runtime)
@@ -63,8 +67,7 @@ for runtime, items in devices.items():
     for d in items:
         if not d["name"].startswith("iPhone"):
             continue
-        plain = not any(w in d["name"] for w in ("Pro", "Plus", "SE", "Air", "Duo", "Fold"))
-        score = (v, plain, d["name"])
+        score = (v, "Pro Max" in d["name"], d["name"])
         if fallback is None or score > fallback[0]:
             fallback = (score, d["udid"], d["name"])
 if fallback is None:
