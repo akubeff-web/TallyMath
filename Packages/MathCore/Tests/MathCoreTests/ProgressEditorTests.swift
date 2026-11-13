@@ -193,3 +193,16 @@ struct CustomProblemTests {
         #expect(store.factErrorRate(2, 2) == nil)
     }
 }
+
+@Suite("Ответы на вопросы шагов")
+struct StepAnswerTests {
+    @Test func variants() {
+        #expect(StepAnswer.check("12", expected: "12") == .correct)
+        #expect(StepAnswer.check(" 2·2·3", expected: "2 · 2 · 3") == .correct)
+        #expect(StepAnswer.check("x=3", expected: "x = 3") == .correct)
+        #expect(StepAnswer.check("6/12", expected: "1/2") == .correctNotSimplest(.reduce(by: 6)))
+        #expect(StepAnswer.check("13", expected: "12") == .wrong(nil))
+        #expect(StepAnswer.check("x = 2 или x = 3", expected: "x = 3 или x = 2") == .correct)
+        #expect(StepAnswer.check("(x−3)(x+3)", expected: "(x − 3)(x + 3)") == .correct)
+    }
+}

@@ -47,6 +47,11 @@ public struct EditorCursor: Hashable, Sendable, Codable {
     public struct Step: Hashable, Sendable, Codable {
         public var node: Int
         public var slot: Int
+
+        public init(node: Int, slot: Int) {
+            self.node = node
+            self.slot = slot
+        }
     }
 }
 
@@ -90,6 +95,11 @@ public struct MathEditor: Hashable, Sendable, Codable {
     }
 
     // MARK: Перемещение
+
+    /// Курсор в конец поля по нажатию на него.
+    public mutating func moveCursor(to path: [EditorCursor.Step]) {
+        cursor = EditorCursor(path: path, position: field(at: path).nodes.count)
+    }
 
     /// Следующее поле шаблона (верх → низ → выход), иначе — на символ вправо.
     public mutating func moveNext() {
