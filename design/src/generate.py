@@ -855,6 +855,208 @@ def learning_sheet():
           "Обучение", "screens-learning.svg")
 
 
+def tab_bar(s, active):
+    t = s.t
+    s.glass(s.capsule(56, 762, 281, 62))
+    x = 62 if active == 0 else 195
+    s.raw(f'<path d="{s.capsule(x, 768, 136, 50)}" fill="{t["ink"]}" fill-opacity="0.09"/>')
+    c0, c1 = (t["ink"], t["sub"]) if active == 0 else (t["sub"], t["ink"])
+    s.icon("grid", 130, 784, 0.95, c0)
+    s.text(130, 810, "Тренировка", 11, 600 if active == 0 else 500, c0, "middle")
+    s.icon("chart", 266, 784, 0.95, c1)
+    s.text(266, 810, "Статистика", 11, 600 if active == 1 else 500, c1, "middle")
+
+
+def error_rate(a, b):
+    """Доля ошибок по факту таблицы: тестовые данные для макета."""
+    hard = {(7, 8): .62, (6, 9): .55, (8, 6): .48, (7, 6): .41, (9, 7): .44, (8, 7): .5, (6, 7): .35, (9, 8): .3}
+    k = (max(a, b), min(a, b)) if (max(a, b), min(a, b)) in hard else (a, b)
+    if (a, b) in hard:
+        return hard[(a, b)]
+    if (b, a) in hard:
+        return hard[(b, a)] * 0.9
+    return ((a * 7 + b * 13) % 10) / 100 + (0.08 if a + b > 13 else 0)
+
+
+def stats_tab(theme):
+    s = Screen(theme, f"stats-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.text(20, 142, "Статистика", 34, 700)
+
+    s.glass(s.capsule(20, 160, 353, 38))
+    w = (353 - 8) / 3
+    for i, lab in enumerate(["Неделя", "Месяц", "Всё время"]):
+        x = 24 + i * w
+        if i == 0:
+            s.raw(f'<path d="{s.capsule(x, 164, w, 30)}" fill="{t["prom_fill"]}"/>')
+        s.text(x + w / 2, 184, lab, 14, 600, t["prom_text"] if i == 0 else t["ink"], "middle")
+
+    tw = (353 - 20) / 3
+    for i, (v, cap) in enumerate((("128", "решено"), ("86%", "точность"), ("12", "лучшая серия"))):
+        x = 20 + i * (tw + 10)
+        s.card(s.rr(x, 210, tw, 76, 22))
+        s.text(x + 14, 248, v, 28, 700)
+        s.text(x + 14, 272, cap, 13, 400, t["sub"])
+
+    # Тепловая карта: один оттенок, темнее — больше ошибок.
+    s.card(s.rr(20, 298, 353, 316, 26))
+    s.text(40, 324, "Таблица умножения", 16, 600)
+    s.text(40, 343, ("темнее" if theme == "light" else "светлее") + " — больше ошибок", 12.5, 500, t["sub"])
+    cell, gap = 24, 3
+    gx, gy = 104, 370
+    for i, n in enumerate(range(2, 10)):
+        s.text(gx + i * (cell + gap) + cell / 2, gy - 6, str(n), 12, 600, t["sub"], "middle")
+        s.text(gx - 12, gy + i * (cell + gap) + cell / 2 + 4, str(n), 12, 600, t["sub"], "middle")
+    for r, a in enumerate(range(2, 10)):
+        for c, b in enumerate(range(2, 10)):
+            e = error_rate(a, b)
+            x, y = gx + c * (cell + gap), gy + r * (cell + gap)
+            op = 0.06 + min(e, 0.65) / 0.65 * 0.94
+            s.raw(f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="7" fill="{t["ink"]}" fill-opacity="{op:.2f}"/>')
+            if e >= 0.4:
+                s.text(x + cell / 2, y + cell / 2 + 3.5, str(a * b), 10, 700, t["bg"], "middle")
+    # Подпись самого слабого факта — прямо на данных, без легенды.
+    s.text(40, 600, "Слабее всего: 7 × 8, 6 × 9, 8 × 7", 13.5, 600)
+
+    s.card(s.rr(20, 626, 353, 220, 26))
+    s.text(40, 652, "Дроби по темам", 16, 600)
+    rows = [("Разный низ", .54, True), ("Сокращение", .77, False), ("Вычитание", .81, False),
+            ("Одинаковый низ", .92, False)]
+    for i, (name, acc, weak) in enumerate(rows):
+        y = 668 + i * 44
+        s.text(40, y + 16, name, 15, 600)
+        if weak:
+            s.raw(f'<path d="{s.capsule(140, y+2, 54, 20)}" fill="none" stroke="{t["ink"]}" stroke-width="1.3" stroke-dasharray="3 3"/>')
+            s.text(167, y + 16, "слабое", 11, 600, anchor="middle")
+        s.raw(f'<rect x="210" y="{y+8}" width="104" height="6" rx="3" fill="{t["ink"]}" fill-opacity="0.1"/>')
+        s.raw(f'<rect x="210" y="{y+8}" width="{104*acc:.0f}" height="6" rx="3" fill="{t["ink"]}"/>')
+        s.text(353, y + 16, f"{int(acc*100)}%", 14, 700, anchor="end")
+        s.text(40, y + 34, "«не понял» ×3" if weak else "", 12, 500, t["sub"])
+
+    fade_bottom(s, 712)
+    tab_bar(s, 1)
+    s.home_indicator()
+    return s
+
+
+def stats_topic(theme):
+    s = Screen(theme, f"stopic-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(196.5, 86, "Разный низ", 17, 600, anchor="middle")
+
+    s.text(20, 168, "54%", 56, 700)
+    s.text(150, 142, "точность", 15, 500, t["sub"])
+    s.text(150, 164, "37 примеров за неделю", 15, 500, t["sub"])
+
+    s.card(s.rr(20, 190, 353, 150, 26))
+    s.text(40, 216, "Последние 10 сессий", 15, 600)
+    vals = [40, 35, 50, 45, 30, 55, 60, 50, 65, 70]
+    x0, x1, y0, y1 = 48, 345, 318, 236
+    for g in (0, 50, 100):
+        gy = y0 - (y0 - y1) * g / 100
+        s.raw(f'<path d="M{x0} {gy:.1f} L{x1} {gy:.1f}" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+        s.text(x1 + 6, gy + 4, f"{g}", 10, 500, t["faint"])
+    pts = [(x0 + (x1 - x0) * i / 9, y0 - (y0 - y1) * v / 100) for i, v in enumerate(vals)]
+    s.raw('<path d="M' + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts) + f'" fill="none" stroke="{t["ink"]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>')
+    lx, ly = pts[-1]
+    s.raw(f'<circle cx="{lx}" cy="{ly}" r="6" fill="{t["ink"]}" stroke="{t["card"]}" stroke-width="2"/>')
+    s.text(lx - 10, ly - 10, "70%", 12, 700, anchor="end")
+
+    s.raw(bit("hint", theme, 50, 380, 0.2))
+    s.card(s.rr(104, 354, 269, 56, 20))
+    s.text(120, 378, "Чаще всего складываешь низы.", 14.5, 600)
+    s.text(120, 398, "Повтори урок, потом 10 примеров.", 13, 400, t["sub"])
+
+    s.card(s.rr(20, 424, 353, 238, 26))
+    s.text(40, 450, "Частые ошибки", 16, 600)
+    errs = [("Сложил верхи и низы", "1/3 + 1/6 = 2/9", 6),
+            ("Низ не делится на оба", "1/4 + 1/6 → взял низ 10", 3),
+            ("Не сократил", "3/6 вместо 1/2", 2)]
+    for i, (a, b, n) in enumerate(errs):
+        y = 470 + i * 62
+        if i:
+            s.raw(f'<path d="M40 {y-6} L353 {y-6}" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+        s.text(40, y + 18, a, 15, 600)
+        s.text(40, y + 40, b, 14, 500, t["sub"])
+        s.raw(f'<path d="{s.capsule(318, y+8, 36, 24)}" fill="{t["prom_fill"] if i == 0 else "none"}" stroke="{t["ink"]}" stroke-width="1.3"/>')
+        s.text(336, y + 25, f"×{n}", 13, 700, t["prom_text"] if i == 0 else t["ink"], "middle")
+
+    s.raw(f'<path d="{s.rr(20, 674, 353, 44, 16)}" fill="none" stroke="{t["ink"]}" stroke-opacity="0.5" stroke-width="1.3" stroke-dasharray="4 4"/>')
+    s.text(196.5, 701, "«Не понял» ×3 — тема выпадает чаще", 13.5, 500, t["sub"], "middle")
+
+    s.glass(s.capsule(20, 760, 166, 56))
+    s.text(103, 794, "Тренировать", 17, 600, anchor="middle")
+    s.glass(s.capsule(196, 760, 177, 56), prominent=True)
+    s.text(284.5, 794, "Повторить урок", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def session_result(theme):
+    s = Screen(theme, f"result-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.text(196.5, 86, "Итоги", 17, 600, anchor="middle")
+
+    s.raw(bit("correct", theme, 196.5, 230, 0.48))
+    s.text(196.5, 340, "8 из 10", 44, 700, anchor="middle")
+    s.text(196.5, 366, "4 мин · серия 5 · точность 80%", 15, 500, t["sub"], "middle")
+
+    # Ряд из 10 примеров: верные залиты, ошибки — контур с крестиком.
+    res = [1, 1, 0, 1, 1, 1, 0, 1, 1, 1]
+    for i, ok in enumerate(res):
+        x = 32 + i * 33.5
+        d = s.rr(x, 388, 28, 28, 9)
+        if ok:
+            s.raw(f'<path d="{d}" fill="{t["ink"]}"/>')
+            s.icon("check", x + 14, 402, 0.55, t["bg"], 3)
+        else:
+            s.raw(f'<path d="{d}" fill="none" stroke="{t["ink"]}" stroke-width="1.6"/>')
+            s.icon("xmark", x + 14, 402, 0.55, t["ink"], 2.6)
+
+    s.card(s.rr(20, 436, 353, 196, 26))
+    s.text(40, 462, "Ошибки", 16, 600)
+    for i, (topic, prob, wrong, right) in enumerate([
+            ("Разный низ", "1/4 + 1/2", "2/6", "3/4"),
+            ("Таблица", "7 × 8", "54", "56")]):
+        y = 478 + i * 72
+        if i:
+            s.raw(f'<path d="M40 {y-6} L353 {y-6}" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+        s.text(40, y + 16, topic, 13, 500, t["sub"])
+        s.text(40, y + 44, f"{prob} =", 20, 700)
+        wx = 40 + len(prob) * 11.5 + 30
+        s.text(wx, y + 44, wrong, 20, 600, t["sub"])
+        s.raw(f'<path d="M{wx-2} {y+38} L{wx + len(wrong)*12 + 2} {y+38}" stroke="{t["ink"]}" stroke-width="2"/>')
+        s.text(wx + len(wrong) * 12 + 14, y + 44, right, 20, 700)
+        s.glass(s.capsule(273, y + 20, 86, 34))
+        s.text(316, y + 42, "Разобрать", 13, 600, anchor="middle")
+
+    s.raw(bit("hint", theme, 50, 676, 0.18))
+    s.card(s.rr(98, 650, 275, 52, 20))
+    s.text(114, 672, "Слабое место: разный низ.", 14.5, 600)
+    s.text(114, 691, "Следующие 10 — чаще по нему.", 13, 400, t["sub"])
+
+    s.glass(s.capsule(20, 760, 150, 56))
+    s.text(95, 794, "На главную", 16, 600, anchor="middle")
+    s.glass(s.capsule(180, 760, 193, 56), prominent=True)
+    s.text(276.5, 794, "Ещё 10 примеров", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def stats_sheet():
+    sheet([stats_tab, stats_topic, session_result],
+          ["Вкладка «Статистика»", "Тема: тренд и частые ошибки", "Итоги сессии (10 примеров)"],
+          "Статистика", "screens-stats.svg")
+
+
 def sheet(fns, labels, name, filename):
     M, GAP, HEAD = 70, 60, 130
     W = M * 2 + PW * len(fns) + GAP * (len(fns) - 1)
@@ -887,4 +1089,5 @@ if __name__ == "__main__":
     bit_sheet()
     screens_sheet()
     learning_sheet()
+    stats_sheet()
     print("ok")
