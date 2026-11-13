@@ -9,6 +9,11 @@ on:
 permissions:
   contents: write
 
+# Новый коммит отменяет устаревшую сборку той же ветки: macOS-раннеров мало.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: macos-26

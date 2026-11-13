@@ -150,3 +150,46 @@ struct LayoutTests {
         #expect(MathLayout.layout("0,25 + 12") == [.text("0,25 + 12")])
     }
 }
+
+@Suite("Свой пример")
+struct CustomProblemTests {
+    func make(_ t: String) -> Problem? { try? CustomProblem.make(t).get() }
+
+    @Test func recognisesTopicsAndAnswers() throws {
+        let p = try #require(make("3/4 − 2/3 = ?"))
+        #expect(p.topicID == "g6.sub")
+        #expect(p.check("1/12") == .correct)
+        let q = try #require(make("x² − 5x + 6 = 0"))
+        #expect(q.topicID == "g8.quadratic")
+        #expect(q.check("x = 3 или x = 2") == .correct)
+        let r = try #require(make("2x + y = 5; x − y = 1"))
+        #expect(r.check("(2; 1)") == .correct)
+        let s = try #require(make("−3x ≤ 6"))
+        #expect(s.check("[−2; +∞)") == .correct)
+        let t = try #require(make("√12 + √27"))
+        #expect(t.check("5√3") == .correct)
+        let u = try #require(make("(a + b)²"))
+        #expect(u.check("a² + 2ab + b²") == .correct)
+        let v = try #require(make("7 × 8"))
+        #expect(v.topicID == "g5.table")
+        let w = try #require(make("1/3 + 1/6"))
+        #expect(w.topicID == "g6.addDiv")
+        let wl = w.checkNotebook(w.steps.compactMap { $0.line }, mode: .steps)
+        #expect(wl.allSatisfy { $0.isCorrect })
+    }
+
+    @Test func explainsWhatIsUnsupported() {
+        #expect(CustomProblem.make("((2 +") == .failure(.cannotRead))
+        guard case .failure(.unsupported) = CustomProblem.make("x + y = 3") else { Issue.record("ожидался отказ"); return }
+        guard case .failure(.unsupported) = CustomProblem.make("x³ + x + 1 = 0") else { Issue.record("ожидался отказ"); return }
+        guard case .failure(.unsupported) = CustomProblem.make("1/0") else { Issue.record("ожидался отказ"); return }
+    }
+
+    @Test func factStats() {
+        var store = ProgressStore()
+        store.recordFact(8, 7, correct: false)
+        store.recordFact(7, 8, correct: true)
+        #expect(store.factErrorRate(7, 8) == .of(1, 2))
+        #expect(store.factErrorRate(2, 2) == nil)
+    }
+}

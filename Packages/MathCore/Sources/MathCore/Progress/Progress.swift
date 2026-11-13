@@ -62,8 +62,24 @@ public struct ProgressStore: Codable, Sendable, Hashable {
     public var solvedByDay: [Int: Int] = [:]
     public var streak = 0
     public var bestStreak = 0
+    /// Факты таблицы умножения «7×8» → последние ответы. Нужно для тепловой карты.
+    public var facts: [String: [Bool]] = [:]
 
     public init() {}
+
+    public mutating func recordFact(_ a: Int, _ b: Int, correct: Bool) {
+        let key = "\(min(a, b))×\(max(a, b))"
+        var list = facts[key] ?? []
+        list.append(correct)
+        if list.count > 10 { list.removeFirst() }
+        facts[key] = list
+    }
+
+    /// Доля ошибок по факту таблицы (nil — не решали).
+    public func factErrorRate(_ a: Int, _ b: Int) -> Rational? {
+        guard let list = facts["\(min(a, b))×\(max(a, b))"], !list.isEmpty else { return nil }
+        return Rational.of(list.filter { !$0 }.count, list.count)
+    }
 
     public func progress(_ id: String) -> TopicProgress { topics[id] ?? TopicProgress() }
 
