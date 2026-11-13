@@ -11,10 +11,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-15, macos-26]
+        os: [xcode-27, macos-26]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - run: |
           uname -a
-          if [ "$(uname)" = "Darwin" ]; then sw_vers; ls -d /Applications/Xcode*.app || true; fi
+          if [ "$(uname)" = "Darwin" ]; then sw_vers; ls -d /Applications/Xcode*.app || true; xcrun simctl list runtimes || true; fi
