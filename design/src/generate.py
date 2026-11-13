@@ -64,16 +64,16 @@ def stroke(d, t, w=4.5, extra=""):
 
 def eye(cx, cy, t, mode="open", dx=0, dy=0):
     if mode == "closed":
-        return stroke(f"M{cx-16} {cy} Q{cx} {cy+7} {cx+16} {cy}", t)
+        return stroke(f"M{cx-17} {cy} Q{cx} {cy+8} {cx+17} {cy}", t)
     if mode == "happy":
-        return stroke(f"M{cx-17} {cy+6} Q{cx} {cy-16} {cx+17} {cy+6}", t)
+        return stroke(f"M{cx-17} {cy+7} Q{cx} {cy-15} {cx+17} {cy+7}", t)
     px, py = cx + dx, cy + dy
-    return (f'<circle cx="{cx}" cy="{cy}" r="20" fill="{t["eye"]}" stroke="{t["eye_ring"]}" stroke-width="3"/>'
-            f'<circle cx="{px}" cy="{py}" r="9.5" fill="{t["pupil"]}"/>'
-            f'<circle cx="{px+3}" cy="{py-3.5}" r="2.6" fill="#FFFFFF"/>')
+    return (f'<circle cx="{cx}" cy="{cy}" r="22" fill="{t["eye"]}" stroke="{t["eye_ring"]}" stroke-width="3"/>'
+            f'<circle cx="{px}" cy="{py}" r="10.5" fill="{t["pupil"]}"/>'
+            f'<circle cx="{px+3.5}" cy="{py-3.5}" r="3" fill="#FFFFFF"/>')
 
 
-def arm(d, hx, hy, t, r=12):
+def arm(d, hx, hy, t, r=13):
     return stroke(d, t) + f'<circle cx="{hx}" cy="{hy}" r="{r}" fill="{t["ink"]}"/>'
 
 
@@ -82,84 +82,85 @@ def plus(x, y, t, s=14):
 
 
 def bit(state, theme, x, y, scale=1.0):
-    """Bit в одном из состояний. (x, y) — центр тела."""
+    """Bit в одном из состояний. (x, y) — центр тела.
+
+    Координаты сняты с образца (лист из 6 состояний), чтобы облик не «поплыл».
+    """
     t = THEMES[theme]
+    # Пузырь мысли, лампочка и корона: в светлой теме контур, в тёмной — светлая заливка, как в образце.
+    pop = "#FFFFFF" if theme == "light" else "#EEEEEE"
+    pop_ink = t["ink"] if theme == "light" else "#151515"
     back, front = [], []
     # Руки рисуем под телом, чтобы плечо пряталось за контур.
-    arm_l_down = arm("M-100 10 C-140 25 -150 60 -150 92", -150, 92, t)
-    arm_r_down = arm("M100 10 C140 25 150 60 150 92", 150, 92, t)
-    arm_l_up = arm("M-100 -8 C-140 -35 -152 -80 -152 -122", -152, -122, t)
-    arm_r_up = arm("M100 -8 C140 -35 152 -80 152 -122", 152, -122, t)
-    smile = stroke("M-26 38 Q0 56 26 38", t)
-    open_mouth = f'<path d="M-29 30 L29 30 Q26 66 0 66 Q-26 66 -29 30 Z" fill="{t["ink"]}"/>'
-    flat_brows = stroke("M-56 -62 L-24 -62 M24 -62 L56 -62", t)
+    arm_l_down = arm("M-104 5 C-135 22 -147 55 -147 92", -147, 92, t)
+    arm_r_down = arm("M104 5 C135 22 147 55 147 92", 147, 92, t)
+    smile = stroke("M-26 36 Q0 52 27 36", t)
+    open_mouth = f'<path d="M-29 30 L29 30 Q27 60 0 60 Q-27 60 -29 30 Z" fill="{t["ink"]}"/>'
 
     if state in ("idle", "idle_blink"):
         back += [arm_l_down, arm_r_down]
         mode = "closed" if state == "idle_blink" else "open"
-        front += [flat_brows, eye(-38, -22, t, mode, 2, -2), eye(38, -22, t, mode, 2, -2), smile]
+        front += [stroke("M-58 -66 L-20 -66 M18 -66 L58 -66", t),
+                  eye(-38, -24, t, mode, 2, -2), eye(38, -24, t, mode, 2, -2), smile]
+    elif state == "waiting":  # «Думает» в образце
+        back += [arm_l_down]
+        hand = (stroke("M106 52 L66 70", t) + f'<circle cx="64" cy="70" r="17" fill="{t["ink"]}"/>')
+        bubble = (f'<circle cx="135" cy="-118" r="6" fill="{t["ink"]}"/>'
+                  f'<circle cx="162" cy="-147" r="9" fill="{t["ink"]}"/>'
+                  f'<ellipse cx="211" cy="-186" rx="50" ry="30" fill="{pop}" stroke="{t["ink"]}" stroke-width="3"/>'
+                  f'<text x="211" y="-171" font-family="{FONT}" font-size="40" font-weight="700" '
+                  f'fill="{pop_ink}" text-anchor="middle">?</text>')
+        front += [stroke("M-58 -72 Q-38 -90 -18 -74", t), stroke("M17 -64 L59 -70", t),
+                  eye(-38, -26, t, "open", 5, -6), eye(38, -24, t, "open", 5, -6),
+                  stroke("M-20 49 L25 39", t), hand, bubble]
     elif state == "correct":
-        back += [arm_l_up, arm_r_up]
-        front += [eye(-38, -20, t, "happy"), eye(38, -20, t, "happy"), open_mouth,
-                  plus(-82, -170, t), plus(96, -190, t, 11)]
+        back += [arm("M-104 -17 C-140 -45 -153 -85 -153 -126", -153, -126, t),
+                 arm("M104 -17 C140 -45 153 -85 153 -126", 153, -126, t)]
+        front += [eye(-36, -18, t, "happy"), eye(39, -18, t, "happy"), open_mouth,
+                  plus(-76, -176, t), plus(83, -193, t)]
     elif state == "wrong":
-        back += [arm_l_down,
-                 arm("M98 -20 C150 -50 150 -110 108 -128", 108, -128, t)]
-        front += [stroke("M-56 -60 L-24 -63", t), stroke("M22 -68 Q40 -80 58 -66", t),
-                  eye(-38, -20, t, "open", -5, 4), eye(38, -20, t, "open", -5, 4),
-                  stroke("M-22 42 C-14 32 -6 32 0 40 C6 48 14 48 22 38", t),
-                  f'<text x="-140" y="-112" font-family="{FONT}" font-size="54" font-weight="700" '
+        back += [arm_l_down, arm("M106 -13 C140 -45 142 -95 88 -130", 88, -130, t)]
+        front += [stroke("M-58 -59 L-18 -75", t), stroke("M18 -75 L58 -59", t),
+                  eye(-37, -23, t, "open", -6, 4), eye(38, -23, t, "open", -6, 4),
+                  stroke("M-25 47 C-17 37 -9 37 0 45 C9 53 17 53 25 43", t),
+                  f'<text x="-147" y="-122" font-family="{FONT}" font-size="54" font-weight="700" '
                   f'fill="{t["ink"]}" text-anchor="middle">?</text>']
     elif state == "hint":
-        back += [arm_l_down, arm("M100 18 C130 14 150 4 172 -6", 172, -6, t)]
-        card = (f'<rect x="190" y="-52" width="86" height="96" rx="20" fill="{t["bg"]}" '
-                f'stroke="{t["ink"]}" stroke-width="3"/>'
-                + stroke("M206 -28 L258 -28", t, 4) + stroke("M206 -8 L246 -8", t, 4)
-                + stroke("M206 12 L254 12", t, 4))
-        bulb = (f'<circle cx="-132" cy="-150" r="20" fill="none" stroke="{t["ink"]}" stroke-width="3.5"/>'
-                + stroke("M-142 -122 L-122 -122 M-140 -114 L-124 -114", t, 3.5)
-                + stroke("M-132 -186 L-132 -196 M-160 -170 L-169 -176 M-104 -170 L-95 -176", t, 3.5))
-        front += [stroke("M-56 -62 L-26 -62", t), stroke("M22 -68 Q40 -82 58 -68", t),
-                  eye(-38, -22, t, "open", 6, 0), eye(38, -22, t, "open", 6, 0),
-                  stroke("M-24 38 Q2 54 26 36", t), card, bulb]
-    elif state == "streak":
-        back += [arm("M-100 -8 C-150 -30 -175 -80 -178 -120", -178, -120, t),
-                 arm("M100 -8 C150 -30 175 -80 178 -120", 178, -120, t)]
-        badge = (f'<rect x="-56" y="-176" width="112" height="40" rx="20" fill="{t["ink"]}"/>'
-                 f'<text x="0" y="-149" font-family="{FONT}" font-size="20" font-weight="700" '
-                 f'fill="{t["bg"]}" text-anchor="middle">Серия 5</text>')
-        ticks = (stroke("M-204 -132 L-218 -142 M-206 -110 L-222 -110", t, 3.5)
-                 + stroke("M204 -132 L218 -142 M206 -110 L222 -110", t, 3.5))
-        front += [stroke("M-56 -58 Q-40 -72 -22 -60 M22 -60 Q40 -72 56 -58", t),
-                  eye(-38, -20, t, "open", 0, -1), eye(38, -20, t, "open", 0, -1), open_mouth,
-                  badge, ticks, plus(-110, -190, t, 11), plus(118, -196, t, 9)]
-    elif state == "waiting":
         back += [arm_l_down]
-        # Рука у подбородка должна быть поверх тела, иначе её не видно.
-        chin = arm("M102 12 C138 34 128 76 82 72", 82, 72, t, 13)
-        bubble = (f'<circle cx="92" cy="-128" r="6" fill="{t["ink"]}"/>'
-                  f'<circle cx="114" cy="-152" r="9" fill="{t["ink"]}"/>'
-                  f'<ellipse cx="166" cy="-190" rx="50" ry="30" fill="{t["bg"]}" stroke="{t["ink"]}" stroke-width="3"/>'
-                  + "".join(f'<circle cx="{166+dx}" cy="-190" r="5.5" fill="{t["ink"]}"/>' for dx in (-18, 0, 18)))
-        front += [stroke("M22 -70 Q40 -82 58 -70", t), stroke("M-56 -62 L-24 -62", t),
-                  eye(-38, -22, t, "open", 5, -6), eye(38, -22, t, "open", 5, -6),
-                  stroke("M-18 42 L20 36", t), bubble, chin]
+        # Рука-указка поверх тела: кисть на середине, линия идёт дальше к карточке подсказки.
+        pointer = (stroke("M106 22 L229 -15", t) + f'<circle cx="184" cy="-1" r="13" fill="{t["ink"]}"/>')
+        bfill = pop if theme == "dark" else "none"
+        bulb = (f'<circle cx="-136" cy="-160" r="21" fill="{bfill}" stroke="{t["ink"]}" stroke-width="3.5"/>'
+                + stroke("M-147 -131 L-125 -131 M-145 -123 L-127 -123", t, 3.5)
+                + stroke("M-136 -197 L-136 -208 M-166 -181 L-176 -187 M-106 -181 L-96 -187", t, 3.5))
+        front += [stroke("M-58 -64 L-18 -64", t), stroke("M19 -76 Q39 -92 59 -76", t),
+                  eye(-38, -25, t, "open", 8, 0), eye(39, -25, t, "open", 8, 0),
+                  stroke("M-20 37 Q4 52 29 34", t), pointer, bulb]
+    elif state == "streak":
+        back += [arm("M-104 -18 C-140 -40 -164 -80 -164 -126", -164, -126, t),
+                 arm("M104 -18 C140 -40 165 -80 165 -126", 165, -126, t)]
+        crown = (f'<path d="M-31 -110 L-31 -144 L-15 -128 L0 -153 L15 -128 L32 -144 L32 -110 Z" '
+                 f'fill="{pop if theme == "dark" else t["ink"]}" stroke-linejoin="round"/>')
+        front += [stroke("M-59 -74 Q-40 -88 -21 -74 M19 -74 Q38 -88 59 -74", t),
+                  eye(-37, -26, t, "open", 0, -2), eye(38, -26, t, "open", 0, -2), open_mouth,
+                  crown, plus(-88, -186, t), plus(94, -200, t, 13), plus(71, -148, t, 10)]
 
     body = (f'<path d="{BODY}" fill="url(#body-{theme})" stroke="{t["outline"]}" stroke-width="3"/>'
-            + stroke("M-88 -44 C-88 -64 -82 -76 -66 -80", t, 3.5, f'stroke-opacity="0.85"'))
+            + stroke("M-88 -46 C-88 -60 -82 -70 -70 -73", t, 3.5, f'stroke-opacity="0.85"'))
     return (f'<g transform="translate({x} {y}) scale({scale})">'
             + "".join(back) + body + "".join(front) + "</g>")
 
 
 def bit_sheet():
     W, CW, CH, HEAD = 1440, 480, 470, 120
+    # Порядок и названия как в образце; в скобках — состояние в коде.
     states = [
-        ("idle", "Спокойный", "idle · моргает, покачивается"),
+        ("idle", "Обычный", "idle · моргает, покачивается"),
+        ("waiting", "Думает", "waiting · ждёт ответ"),
         ("correct", "Верно", "correct · «Верно.»"),
         ("wrong", "Ошибка", "wrong · «Почти. Смотри шаги ниже.»"),
-        ("hint", "Подсказка", "hint · показывает на карточку"),
+        ("hint", "Подсказка", "hint · показывает на подсказку"),
         ("streak", "Серия", "streak · «Серия: 5»"),
-        ("waiting", "Ждёт", "waiting · ждёт ответ"),
     ]
     sec_h = HEAD + 2 * CH
     H = sec_h * 2
@@ -174,12 +175,12 @@ def bit_sheet():
         for i, (st, name, sub) in enumerate(states):
             cx = (i % 3) * CW + CW / 2
             cy = oy + HEAD + (i // 3) * CH + 250
-            shift = {"hint": -45, "waiting": -30}.get(st, 0)
+            shift = {"hint": -40, "waiting": -40}.get(st, 0)
             parts.append(bit(st, theme, cx + shift, cy, 0.9))
             if st == "idle":
                 # Кадр моргания рядом, чтобы было видно анимацию.
-                parts.append(bit("idle_blink", theme, cx + 150, cy - 150, 0.28))
-                parts.append(f'<text x="{cx+150}" y="{cy-96}" font-family="{FONT}" font-size="14" fill="{t["sub"]}" text-anchor="middle">кадр моргания</text>')
+                parts.append(bit("idle_blink", theme, cx + 160, cy - 150, 0.28))
+                parts.append(f'<text x="{cx+160}" y="{cy-96}" font-family="{FONT}" font-size="14" fill="{t["sub"]}" text-anchor="middle">кадр моргания</text>')
             parts.append(f'<text x="{cx}" y="{cy+165}" font-family="{FONT}" font-size="26" font-weight="600" fill="{t["ink"]}" text-anchor="middle">{name}</text>')
             parts.append(f'<text x="{cx}" y="{cy+195}" font-family="{FONT}" font-size="16" fill="{t["sub"]}" text-anchor="middle">{sub}</text>')
     parts.append("</svg>")
