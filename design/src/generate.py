@@ -343,6 +343,7 @@ def home(theme):
     s.text(138, 238, "Начнём с него?", 15, 400, t["sub"])
 
     s.text(20, 300, "РЕЖИМ", 13, 600, t["sub"])
+    s.text(373, 300, "Как решать", 15, 500, t["ink"], "end")
     s.glass(s.capsule(20, 312, 353, 52))
     sel = s.capsule(25, 317, 108, 42)
     s.raw(f'<path d="{sel}" fill="{t["prom_fill"]}"/>')
@@ -404,14 +405,20 @@ def answer_fields(s, x0, y0, whole, num, den, active):
     s.text(x0 + 33, y0 + 142, "целая", 12, 500, t["sub"], "middle")
 
 
-def training_top(s, label, done):
+def training_top(s, label, done, howto=False):
     t = s.t
     s.status_bar()
     s.glass(s.capsule(20, 58, 44, 44))
     s.icon("xmark", 42, 80)
     s.text(196.5, 86, f"{done + 1} из 10", 17, 600, anchor="middle")
-    s.glass(s.capsule(303, 58, 70, 44))
-    s.text(338, 86, "Серия 4", 13, 600, anchor="middle")
+    if howto:
+        # Объяснение доступно до ответа, а не только после ошибки.
+        s.glass(s.capsule(263, 58, 110, 44))
+        s.icon("bulb", 280, 80, 0.85)
+        s.text(334, 85, "Как решать", 13, 600, anchor="middle")
+    else:
+        s.glass(s.capsule(303, 58, 70, 44))
+        s.text(338, 86, "Серия 4", 13, 600, anchor="middle")
     seg = (353 - 9 * 5) / 10
     for i in range(10):
         x = 20 + i * (seg + 5)
@@ -434,7 +441,7 @@ def training(theme):
     s = Screen(theme, f"train-{theme}")
     t = s.t
     s.background()
-    training_top(s, "Сложение с разным низом", 2)
+    training_top(s, "Сложение с разным низом", 2, howto=True)
     problem(s, 182)
 
     s.raw(bit("waiting", theme, 70, 410, 0.27))
@@ -500,38 +507,265 @@ def review(theme):
     s.text(40, 676, "Ответ", 15, 500, t["sub"])
     s.text(353, 678, "1/2", 22, 700, anchor="end")
 
-    s.glass(s.capsule(20, 716, 353, 56), prominent=True)
-    s.text(188, 750, "Дальше", 18, 600, t["prom_text"], "middle")
-    s.icon("arrow.right", 240, 744, 1.0, t["prom_text"], 2.4)
-    s.glass(s.capsule(120, 782, 153, 40))
-    s.text(196.5, 808, "Похожий пример", 14, 600, anchor="middle")
+    understood_buttons(s, 716)
+    s.text(196.5, 800, "«Не понял» — объясню подробнее, со стрелками", 13, 400, t["sub"], "middle")
     s.home_indicator()
     return s
 
 
-def screens_sheet():
+
+def understood_buttons(s, y):
+    t = s.t
+    s.glass(s.capsule(20, y, 160, 56))
+    s.text(100, y + 34, "Не понял", 18, 600, anchor="middle")
+    s.glass(s.capsule(190, y, 183, 56), prominent=True)
+    s.icon("check", 238, y + 28, 1.0, t["prom_text"], 2.6)
+    s.text(292, y + 34, "Понял", 18, 600, t["prom_text"], "middle")
+
+
+def frac2(s, cx, top, num, den, size, ncol, dcol, weight=700):
+    """Дробь, где верх и низ можно подсветить по-разному."""
+    s.text(cx, top + size * 0.82, num, size, weight, ncol, "middle")
+    ly = top + size + 6
+    w = max(len(num), len(den)) * size * 0.62 + 10
+    s.raw(f'<path d="M{cx-w/2} {ly} L{cx+w/2} {ly}" stroke="{s.t["ink"]}" stroke-width="{size/14:.1f}" stroke-linecap="round"/>')
+    s.text(cx, ly + 6 + size * 0.82, den, size, weight, dcol, "middle")
+    return dict(num_y=top + size * 0.46, line_y=ly, den_y=ly + 6 + size * 0.46)
+
+
+def arrow(s, x1, x2, y, label):
+    """Горизонтальная стрелка с меткой действия посередине (например «× 2»)."""
+    t = s.t
+    s.raw(f'<path d="M{x1} {y} L{x2} {y} M{x2-8} {y-6} L{x2} {y} L{x2-8} {y+6}" fill="none" '
+          f'stroke="{t["ink"]}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>')
+    mx = (x1 + x2) / 2
+    s.raw(f'<path d="{s.capsule(mx-26, y-13, 52, 26)}" fill="{t["prom_fill"]}"/>')
+    s.text(mx, y + 6, label, 15, 700, t["prom_text"], "middle")
+
+
+def detail_switch(s, active):
+    """Уровни подробности объяснения: можно переключать вручную."""
+    t = s.t
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(196.5, 86, "Как решать", 17, 600, anchor="middle")
+    s.glass(s.capsule(20, 114, 353, 40))
+    labels = ["Кратко", "Подробно", "По шагам"]
+    w = (353 - 8) / 3
+    for i, lab in enumerate(labels):
+        x = 24 + i * w
+        if i == active:
+            s.raw(f'<path d="{s.capsule(x, 118, w, 32)}" fill="{t["prom_fill"]}"/>')
+        s.text(x + w / 2, 139, lab, 14, 600, t["prom_text"] if i == active else t["ink"], "middle")
+
+
+def numbered(s, x, y, n):
+    t = s.t
+    s.raw(f'<circle cx="{x}" cy="{y}" r="13" fill="{t["ink"]}"/>')
+    s.text(x, y + 5.5, str(n), 14, 700, t["bg"], "middle")
+
+
+def lesson_brief(theme):
+    s = Screen(theme, f"lesson1-{theme}")
+    t = s.t
+    s.background()
+    detail_switch(s, 0)
+    s.text(20, 190, "Сложение с разным низом", 22, 700)
+    s.text(20, 213, "Пример: 1/3 + 1/6", 15, 400, t["sub"])
+
+    s.raw(bit("hint", theme, 50, 262, 0.2))
+    s.card(s.rr(104, 234, 269, 56, 20))
+    s.text(120, 257, "Низы разные — начни с них.", 15.5, 600)
+    s.text(120, 278, "Четыре шага, по одному правилу.", 13.5, 400, t["sub"])
+
+    s.card(s.rr(20, 302, 353, 254, 26))
+    rules = [
+        ("Делаем низы одинаковыми.", "Общий низ 6: делится на 3 и на 6."),
+        ("Умножаем верх и низ на одно число.", "6 : 3 = 2, значит 1/3 = 2/6."),
+        ("Складываем верхи, низ оставляем.", "2/6 + 1/6 = 3/6"),
+        ("Сокращаем.", "3 и 6 делятся на 3: 3/6 = 1/2."),
+    ]
+    for i, (a, b) in enumerate(rules):
+        y = 332 + i * 58
+        numbered(s, 46, y, i + 1)
+        s.text(70, y + 5, a, 15, 600)
+        s.text(70, y + 27, b, 14, 500, t["sub"])
+
+    # Полная запись решения одной строкой, дробями «столбиком».
+    s.card(s.rr(20, 568, 353, 124, 26))
+    s.text(40, 596, "Вся запись", 14, 500, t["sub"])
+    s.glass(s.capsule(234, 576, 125, 30))
+    s.text(296.5, 596, "Другой пример", 13, 600, anchor="middle")
+    items = [("f", "1", "3"), ("o", "+"), ("f", "1", "6"), ("o", "="), ("f", "2", "6"), ("o", "+"),
+             ("f", "1", "6"), ("o", "="), ("f", "3", "6"), ("o", "="), ("f", "1", "2")]
+    x = 46
+    for it in items:
+        if it[0] == "f":
+            last = it == items[-1]
+            if last:
+                s.raw(f'<path d="{s.rr(x-4, 614, 34, 66, 12)}" fill="{t["prom_fill"]}"/>')
+            c = t["prom_text"] if last else t["ink"]
+            s.text(x + 13, 638, it[1], 24, 700, c, "middle")
+            s.raw(f'<path d="M{x+3} 646 L{x+23} 646" stroke="{c}" stroke-width="2" stroke-linecap="round"/>')
+            s.text(x + 13, 672, it[2], 24, 700, c, "middle")
+            x += 26 + 6
+        else:
+            s.text(x + 10, 654, it[1], 22, 500, t["ink"], "middle")
+            x += 20 + 6
+
+    s.text(196.5, 728, "«Не понял» — покажу подробнее, со стрелками", 13, 400, t["sub"], "middle")
+    understood_buttons(s, 752)
+    s.home_indicator()
+    return s
+
+
+def lesson_detail(theme):
+    s = Screen(theme, f"lesson2-{theme}")
+    t = s.t
+    s.background()
+    detail_switch(s, 1)
+
+    s.raw(bit("hint", theme, 50, 198, 0.2))
+    s.card(s.rr(104, 172, 269, 52, 20))
+    s.text(120, 204, "Смотри на стрелки.", 16, 600)
+
+    def card(y0, n, title, caption):
+        s.card(s.rr(20, y0, 353, 158, 26))
+        numbered(s, 46, y0 + 26, n)
+        s.text(70, y0 + 31, title, 16, 600)
+        s.text(40, y0 + 144, caption, 14, 500, t["sub"])
+
+    y = 238
+    card(y, 1, "На что умножить низ", "3 × 2 = 6, значит множитель — 2.")
+    a = frac2(s, 96, y + 44, "1", "3", 32, t["faint"], t["ink"])
+    frac2(s, 296, y + 44, "1", "6", 32, t["faint"], t["ink"])
+    arrow(s, 124, 268, a["den_y"], "× 2")
+
+    y = 408
+    card(y, 2, "Умножаем и верх, и низ", "Только низ нельзя: 1/6 — не то же, что 1/3.")
+    a = frac2(s, 96, y + 44, "1", "3", 32, t["ink"], t["ink"])
+    frac2(s, 296, y + 44, "2", "6", 32, t["ink"], t["ink"])
+    arrow(s, 124, 268, a["num_y"], "× 2")
+    arrow(s, 124, 268, a["den_y"], "× 2")
+
+    y = 578
+    card(y, 3, "Складываем верхи", "Верхи: 2 + 1 = 3. Низ 6 не меняется.")
+    a = frac2(s, 86, y + 44, "2", "6", 32, t["ink"], t["faint"])
+    frac2(s, 196, y + 44, "1", "6", 32, t["ink"], t["faint"])
+    frac2(s, 306, y + 44, "3", "6", 32, t["ink"], t["faint"])
+    for ox, op in ((141, "+"), (251, "=")):
+        s.text(ox, a["line_y"] + 10, op, 30, 500, anchor="middle")
+
+    y = 748
+    card(y, 4, "Сокращаем", "3 и 6 делятся на 3.")
+    a = frac2(s, 96, y + 44, "3", "6", 32, t["ink"], t["ink"])
+    frac2(s, 296, y + 44, "1", "2", 32, t["ink"], t["ink"])
+    arrow(s, 124, 268, a["num_y"], "÷ 3")
+    arrow(s, 124, 268, a["den_y"], "÷ 3")
+
+    # Край прокрутки: контент мягко уходит под кнопки, как в iOS 26.
+    gid = s.uid("fade")
+    s.defs.append(f'<linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
+                  f'<stop offset="0" stop-color="{t["base"]}" stop-opacity="0"/>'
+                  f'<stop offset="0.45" stop-color="{t["base"]}" stop-opacity="0.85"/>'
+                  f'<stop offset="1" stop-color="{t["base"]}" stop-opacity="1"/></linearGradient>')
+    s.raw(f'<rect x="0" y="700" width="{PW}" height="152" fill="url(#{gid})"/>')
+    understood_buttons(s, 762)
+    s.home_indicator()
+    return s
+
+
+def keypad(s, y0, kh=44, g=7):
+    kw = (353 - 20) / 3
+    keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "updown", "0", "delete"]
+    for i, k in enumerate(keys):
+        x = 20 + (i % 3) * (kw + 10)
+        y = y0 + (i // 3) * (kh + g)
+        s.glass(s.rr(x, y, kw, kh, 16))
+        if k.isdigit():
+            s.text(x + kw / 2, y + kh / 2 + 9, k, 24, 500, anchor="middle")
+        else:
+            s.icon(k, x + kw / 2, y + kh / 2, 1.0)
+
+
+def lesson_steps(theme):
+    s = Screen(theme, f"lesson3-{theme}")
+    t = s.t
+    s.background()
+    detail_switch(s, 2)
+
+    s.text(20, 186, "Шаг 1 из 4", 15, 600)
+    for i in range(4):
+        s.raw(f'<rect x="{293 + i * 21}" y="178" width="16" height="6" rx="3" fill="{t["ink"]}" fill-opacity="{1 if i == 0 else 0.15}"/>')
+
+    s.card(s.rr(20, 200, 353, 244, 26))
+    # Низы выделены инверсией: на этом шаге важны только они.
+    for cx in (150, 246):
+        s.raw(f'<circle cx="{cx}" cy="{268}" r="19" fill="{t["prom_fill"]}"/>')
+    frac2(s, 150, 214, "1", "3", 28, t["faint"], t["prom_text"])
+    s.text(198, 258, "+", 26, 500, anchor="middle")
+    frac2(s, 246, 214, "1", "6", 28, t["faint"], t["prom_text"])
+    s.text(196.5, 324, "На что умножить 3,", 19, 600, anchor="middle")
+    s.text(196.5, 348, "чтобы получилось 6?", 19, 600, anchor="middle")
+    s.text(118, 412, "3", 36, 700, anchor="middle")
+    s.text(156, 410, "×", 32, 500, anchor="middle")
+    d = s.rr(182, 370, 64, 58, 16)
+    s.raw(f'<path d="{d}" fill="{t["card"]}" fill-opacity="0.95" stroke="{t["ink"]}" stroke-width="2.5"/>')
+    s.raw(f'<rect x="212.8" y="386" width="2.4" height="26" rx="1.2" fill="{t["ink"]}"/>')
+    s.text(276, 410, "=", 32, 500, anchor="middle")
+    s.text(316, 412, "6", 36, 700, anchor="middle")
+
+    s.raw(bit("idle", theme, 50, 488, 0.2))
+    s.card(s.rr(104, 460, 150, 56, 20))
+    s.text(120, 484, "Твой ход.", 15.5, 600)
+    s.text(120, 504, "Один шаг за раз.", 13.5, 400, t["sub"])
+    s.glass(s.capsule(264, 466, 109, 44))
+    s.icon("bulb", 282, 488, 0.85)
+    s.text(336, 493, "Подсказка", 13, 600, anchor="middle")
+
+    keypad(s, 534)
+    s.glass(s.capsule(20, 764, 353, 52), prominent=True)
+    s.icon("check", 124, 790, 1.0, t["prom_text"], 2.6)
+    s.text(206, 796, "Проверить шаг", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def learning_sheet():
+    sheet([lesson_brief, lesson_detail, lesson_steps],
+          ["1. Кратко: правила и вся запись", "2. Подробно: стрелки, на что умножать", "3. По шагам: решаешь сам"],
+          "Обучение", "screens-learning.svg")
+
+
+def sheet(fns, labels, name, filename):
     M, GAP, HEAD = 70, 60, 130
     W = M * 2 + PW * 3 + GAP * 2
     sec_h = HEAD + PH + 90
     H = sec_h * 2
-    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
              "<defs>" + defs_bit("light") + defs_bit("dark") + "</defs>"]
-    labels = ["Главная", "Тренировка: ввод", "Тренировка: разбор ошибки"]
     for si, theme in enumerate(("light", "dark")):
         t = THEMES[theme]
         oy = si * sec_h
         parts.append(f'<rect x="0" y="{oy}" width="{W}" height="{sec_h}" fill="{t["sheet"]}"/>')
-        title = "Экраны · светлая тема" if theme == "light" else "Экраны · тёмная тема"
+        title = f"{name} · {'светлая' if theme == 'light' else 'тёмная'} тема"
         parts.append(f'<text x="{M}" y="{oy+72}" font-family="{FONT}" font-size="30" font-weight="700" fill="{t["ink"]}">{title}</text>')
-        for i, fn in enumerate((home, training, review)):
+        for i, fn in enumerate(fns):
             x = M + i * (PW + GAP)
             parts.append(f'<text x="{x}" y="{oy+112}" font-family="{FONT}" font-size="17" font-weight="500" fill="{t["sub"]}">{labels[i]}</text>')
             parts.append(f'<g transform="translate({x} {oy+HEAD})">{fn(theme).render()}</g>')
     parts.append("</svg>")
-    (OUT / "screens.svg").write_text("\n".join(parts), encoding="utf-8")
+    (OUT / filename).write_text("\n".join(parts), encoding="utf-8")
+
+
+def screens_sheet():
+    sheet([home, training, review], ["Главная", "Тренировка: ввод", "Тренировка: разбор ошибки"],
+          "Экраны", "screens.svg")
 
 
 if __name__ == "__main__":
     bit_sheet()
     screens_sheet()
+    learning_sheet()
     print("ok")
