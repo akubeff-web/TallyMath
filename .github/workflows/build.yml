@@ -45,29 +45,7 @@ jobs:
       - name: Сгенерировать проект
         run: xcodegen generate
 
-      - name: Тесты MathCore
-        working-directory: Packages/MathCore
-        run: swift test
-
-      - name: Проверить Swift-сниппеты
-        run: python3 scripts/check_snippets.py
-
-      - name: Выбрать симулятор
-        id: sim
-        run: |
-          UDID=$(python3 scripts/pick_simulator.py)
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-
-      - name: Тесты приложения на симуляторе
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -project TallyMath.xcodeproj -scheme TallyMath \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -derivedDataPath build/sim \
-            CODE_SIGNING_ALLOWED=NO | tee build-test.log | grep -E "error:|warning: |Test |passed|failed|BUILD" || true
-          test ${PIPESTATUS[0]} -eq 0
-
+      # Сначала .ipa и Release — это главное; тесты и скриншоты после.
       - name: Неподписанная сборка
         run: |
           set -o pipefail
@@ -98,6 +76,29 @@ jobs:
           name: TallyMath ${{ inputs.release_tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
           files: TallyMath.ipa
+
+      - name: Тесты MathCore
+        working-directory: Packages/MathCore
+        run: swift test
+
+      - name: Проверить Swift-сниппеты
+        run: python3 scripts/check_snippets.py
+
+      - name: Выбрать симулятор
+        id: sim
+        run: |
+          UDID=$(python3 scripts/pick_simulator.py)
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Тесты приложения на симуляторе
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project TallyMath.xcodeproj -scheme TallyMath \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/sim \
+            CODE_SIGNING_ALLOWED=NO | tee build-test.log | grep -E "error:|warning: |Test |passed|failed|BUILD" || true
+          test ${PIPESTATUS[0]} -eq 0
 
       # Скриншоты — последними и не роняют сборку: главное — .ipa.
       - name: Скриншоты
