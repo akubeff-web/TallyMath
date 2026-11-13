@@ -139,6 +139,7 @@ public enum SimplestIssue: Sendable, Equatable, Hashable {
     case standardForm
     case writeAsDecimal
     case simplifyRadical
+    case writeAsImproper
 
     public var message: String {
         switch self {
@@ -153,6 +154,7 @@ public enum SimplestIssue: Sendable, Equatable, Hashable {
         case .standardForm: return "Верно, но в стандартном виде 1 ≤ a < 10."
         case .writeAsDecimal: return "Верно, но нужна десятичная дробь."
         case .simplifyRadical: return "Верно, но вынеси множитель из-под корня."
+        case .writeAsImproper: return "Верно, но нужна неправильная дробь."
         }
     }
 }

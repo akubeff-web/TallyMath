@@ -303,31 +303,56 @@ private struct State {
         return left
     }
 
-    // term := unary (op unary | неявное умножение)*
+    // term := factor (op factor | неявное умножение)*
     mutating func parseTerm() throws -> Expr {
-        var left = try parseUnary()
+        var left = try parseFactor()
+        // «−12x» — это −(12x): минус относится ко всему произведению.
+        var negate = false
+        if case .neg(let inner) = left, isSymbol("×") || isSymbol(":") || startsImplicitFactor() {
+            left = inner
+            negate = true
+        }
         while true {
             if isSymbol("×") {
                 _ = next()
-                left = .mul(left, try parseUnary())
+                left = .mul(left, try parseFactor())
             } else if isSymbol(":") {
                 _ = next()
-                left = .div(left, try parseUnary())
+                left = .div(left, try parseFactor())
             } else if isSymbol("/") {
                 _ = next()
-                let right = try parseUnary()
-                // «1/3» из двух целых — это дробь, остальное — деление.
-                if case .integer = left, case .integer = right {
-                    left = .fraction(left, right, annotation: try parseAnnotation())
-                } else {
-                    left = .div(left, right)
-                }
+                left = .div(left, try parseUnary())
             } else if startsImplicitFactor() {
                 left = .mul(left, try parsePower())
             } else {
-                return left
+                return negate ? .neg(left) : left
             }
         }
+    }
+
+    /// Множитель: «1/3» из двух целых связывается сильнее, чем «:» и «×»: 4/9 : 3/6 = (4/9) : (3/6).
+    mutating func parseFactor() throws -> Expr {
+        let first = try parseUnary()
+        guard isSymbol("/"), peek(1).kind == .number, !["^", "²"].contains(peek(2).text) else { return first }
+        switch first {
+        case .integer:
+            _ = next()
+            guard case .integer = try parsePostfix() else { throw MathError.syntax("дробь") }
+            return .fraction(first, try lastInteger(), annotation: try parseAnnotation())
+        case .neg(.integer(let n)):
+            _ = next()
+            guard case .integer = try parsePostfix() else { throw MathError.syntax("дробь") }
+            return .neg(.fraction(.integer(n), try lastInteger(), annotation: try parseAnnotation()))
+        default:
+            return first
+        }
+    }
+
+    /// Последний прочитанный токен — целое число (знаменатель дроби).
+    func lastInteger() throws -> Expr {
+        let t = tokens[pos - 1]
+        guard t.kind == .number, let v = Int(t.text) else { throw MathError.syntax("ожидалось целое") }
+        return .integer(v)
     }
 
     func startsImplicitFactor() -> Bool {

@@ -2,6 +2,8 @@
 public enum AnswerKind: String, Sendable, Codable, Hashable {
     /// Число: дробь сокращена, корень упрощён; целая часть — если requireMixed.
     case number
+    /// Неправильная дробь (из смешанного числа).
+    case improperFraction
     /// Десятичная дробь.
     case decimal
     /// Многочлен стандартного вида.
@@ -52,6 +54,9 @@ enum Simplest {
         guard let e = answerExpression(s) else { return nil }
         switch spec.kind {
         case .number: return numberIssue(e, requireMixed: spec.requireMixed)
+        case .improperFraction:
+            if case .mixed = stripNeg(e) { return .writeAsImproper }
+            return numberIssue(e, requireMixed: false)
         case .decimal:
             if let issue = numberIssue(e, requireMixed: false) { return issue }
             if case .fraction = stripNeg(e), (try? e.rationalValue())??.isTerminatingDecimal == true { return .writeAsDecimal }

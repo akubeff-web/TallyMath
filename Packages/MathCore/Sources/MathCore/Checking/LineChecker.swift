@@ -29,6 +29,9 @@ public enum LineChecker {
             switch st {
             case .continuation(let e), .expression(let e): parts = [e]
             case .chain(let es): parts = es
+            case .relation(.variable(let v), .eq, let b) where !problem.variables.contains(v):
+                // «y = 81» — просто подпись результата.
+                parts = [b]
             case .relation(let a, .eq, let b): parts = [a, b]
             default:
                 result.append(.unverifiable("здесь ожидается выражение"))
@@ -116,6 +119,10 @@ public enum LineChecker {
             var status: LineStatus
             if case .point(let p) = target, let s = pointStatus(st, point: p) {
                 status = s
+            } else if case .system(let parts) = problem, case .relation = st, let got = try? Solver.solve(st),
+                      parts.contains(where: { (try? Solver.solve($0)) == got }) {
+                // В системе неравенств строка может решать одно из неравенств.
+                status = .correct
             } else if let got = try? Solver.solve(st) {
                 if got == target {
                     status = .correct

@@ -71,6 +71,7 @@ enum Mutations {
         case .div(let x, let y):
             // a/b : c/d → a/b · c/d (не перевернул).
             out.append((MistakeReport(.divisionNotFlipped), .mul(x, y)))
+            out.append((MistakeReport(.divisionNotFlipped, detail: "Переворачивают вторую дробь, а не первую."), .div(y, x)))
             out += cancelled(x, y)
         case .pow(let base, let exp):
             if case .integer(2) = exp, case .group(let g) = base {
