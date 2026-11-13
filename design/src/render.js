@@ -8,7 +8,7 @@ const dir = path.resolve(__dirname, '..');
 
 (async () => {
   const browser = await chromium.launch();
-  for (const name of ['bit-states', 'screens', 'screens-learning', 'screens-stats', 'screens-solve', 'screens-course']) {
+  for (const name of ['bit-states', 'screens', 'screens-learning', 'screens-stats', 'screens-solve', 'screens-course', 'screens-review']) {
     const svg = fs.readFileSync(path.join(dir, `${name}.svg`), 'utf8');
     const w = +svg.match(/width="(\d+(?:\.\d+)?)"/)[1];
     const h = +svg.match(/height="(\d+(?:\.\d+)?)"/)[1];

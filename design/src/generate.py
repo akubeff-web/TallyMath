@@ -298,6 +298,7 @@ class Screen:
             "redo": f'<path d="M7 -2 L2 -7 M7 -2 L2 3 M7 -2 L-3 -2 C-7 -2 -9 1 -9 4 C-9 7 -7 9 -3 9" {st}/>',
             "trash": f'<path d="M-8 -6 L8 -6 M-3 -6 L-3 -9 L3 -9 L3 -6 M-6 -6 L-5 9 L5 9 L6 -6" {st}/>',
             "eye": f'<path d="M-10 0 C-6 -7 6 -7 10 0 C6 7 -6 7 -10 0 Z" {st}/><circle r="3" fill="{c}"/>',
+            "repeat": f'<path d="M8 -2 C7 -7 3 -10 -2 -9 C-7 -8 -10 -3 -9 2 C-8 7 -3 10 2 9 C5 8 7 6 8 3 M8 -9 L8 -2 L1 -2" {st}/>',
             "chevron.down": f'<path d="M-7 -3 L0 4 L7 -3" {st}/>',
             "chevron.up": f'<path d="M-7 3 L0 -4 L7 3" {st}/>',
             "question": f'<circle r="11" {st} stroke-dasharray="3 3"/><path d="M-3.5 -3 C-3.5 -7 3.5 -7 3.5 -3 C3.5 0 0 0 0 3" {st}/><circle cy="7" r="1.4" fill="{c}"/>',
@@ -337,8 +338,8 @@ class Screen:
                 + f'<path d="{self.rr(0, 0, PW, PH, 55)}" fill="none" stroke="{t["frame"]}" stroke-width="2"/>')
 
 
-def home(theme):
-    s = Screen(theme, f"home-{theme}")
+def home(theme, review=False):
+    s = Screen(theme, f"home{'r' if review else ''}-{theme}")
     t = s.t
     s.background()
     s.status_bar()
@@ -350,11 +351,24 @@ def home(theme):
     s.icon("gear", 351, 80)
     s.text(20, 142, "Tally", 34, 700)
 
-    # Bit и его реплика (контент, без стекла).
-    s.raw(bit("idle", theme, 64, 222, 0.3))
-    s.card(s.rr(120, 178, 253, 82, 22))
-    s.text(138, 210, "Слабое место: разный низ.", 16, 600)
-    s.text(138, 238, "Начнём с него?", 15, 400, t["sub"])
+    if review:
+        # Освоенная тема вернулась по графику повторения.
+        s.card(s.rr(20, 164, 353, 116, 24))
+        s.raw(bit("idle", theme, 52, 206, 0.2))
+        s.text(100, 196, "Пора повторить", 17, 700)
+        s.text(100, 216, "Освоенное тоже забывается.", 13.5, 500, t["sub"])
+        s.raw(f'<path d="M40 232 L353 232" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+        s.text(40, 254, "Одинаковый низ", 15.5, 600)
+        s.text(40, 271, "10/10 три дня назад · 5 примеров", 12.5, 500, t["sub"])
+        s.glass(s.capsule(255, 240, 104, 34), prominent=True)
+        s.icon("repeat", 271, 257, 0.7, t["prom_text"], 2.4)
+        s.text(321, 262, "Повторить", 13.5, 600, t["prom_text"], "middle")
+    else:
+        # Bit и его реплика (контент, без стекла).
+        s.raw(bit("idle", theme, 64, 222, 0.3))
+        s.card(s.rr(120, 178, 253, 82, 22))
+        s.text(138, 210, "Слабое место: разный низ.", 16, 600)
+        s.text(138, 238, "Начнём с него?", 15, 400, t["sub"])
 
     s.text(20, 300, "РЕЖИМ", 13, 600, t["sub"])
     s.glass(s.capsule(20, 312, 353, 52))
@@ -381,6 +395,10 @@ def home(theme):
             s.raw(f'<circle cx="42" cy="{y+26}" r="10.5" fill="none" stroke="{t["ink"]}" stroke-opacity="0.35" stroke-width="1.6"/>')
         s.text(64, y + 24, name, 16, 600)
         s.text(64, y + 42, f"точность {acc}", 12.5, 400, t["sub"])
+        if review and i == 0:
+            s.raw(f'<path d="{s.capsule(208, y+12, 70, 22)}" fill="none" stroke="{t["ink"]}" stroke-width="1.4"/>')
+            s.icon("repeat", 221, y + 23, 0.5, t["ink"], 2.6)
+            s.text(252, y + 27, "повтор", 12, 600, anchor="middle")
         if weak:
             # Слабая тема: пунктирная рамка вместо цвета.
             s.raw(f'<path d="{s.capsule(196, y+12, 62, 22)}" fill="none" stroke="{t["ink"]}" stroke-width="1.4" stroke-dasharray="3 3"/>')
@@ -1523,6 +1541,117 @@ def course_sheet():
           "Курс", "screens-course.svg")
 
 
+
+def review_timeline(s, y, done):
+    """График повторений: интервалы растут, пройденные залиты, следующее в рамке."""
+    t = s.t
+    steps = ["сегодня", "1 д", "3 д", "7 д", "14 д", "30 д"]
+    x0, x1 = 50, 343
+    s.raw(f'<path d="M{x0} {y} L{x1} {y}" stroke="{t["ink"]}" stroke-opacity="0.15" stroke-width="2"/>')
+    s.raw(f'<path d="M{x0} {y} L{x0 + (x1-x0)*(done)/5} {y}" stroke="{t["ink"]}" stroke-width="2"/>')
+    for i, lab in enumerate(steps):
+        x = x0 + (x1 - x0) * i / 5
+        if i <= done:
+            s.raw(f'<circle cx="{x}" cy="{y}" r="9" fill="{t["ink"]}"/>')
+            s.icon("check", x, y, 0.45, t["bg"], 3.2)
+        elif i == done + 1:
+            s.raw(f'<circle cx="{x}" cy="{y}" r="10" fill="{t["card"]}" stroke="{t["ink"]}" stroke-width="2.4"/>')
+        else:
+            s.raw(f'<circle cx="{x}" cy="{y}" r="6" fill="{t["card"]}" stroke="{t["ink"]}" stroke-opacity="0.35" stroke-width="1.6"/>')
+        s.text(x, y + 28, lab, 12, 600 if i == done + 1 else 500, t["ink"] if i == done + 1 else t["sub"], "middle")
+
+
+def result_perfect(theme):
+    s = Screen(theme, f"perfect-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.text(196.5, 86, "Итоги", 17, 600, anchor="middle")
+    s.raw(bit("streak", theme, 196.5, 250, 0.46))
+    s.text(196.5, 352, "10 из 10", 44, 700, anchor="middle")
+    s.text(196.5, 378, "Одинаковый низ · 3 мин", 15, 500, t["sub"], "middle")
+    for i in range(10):
+        x = 32 + i * 33.5
+        s.raw(f'<path d="{s.rr(x, 398, 28, 28, 9)}" fill="{t["ink"]}"/>')
+        s.icon("check", x + 14, 412, 0.55, t["bg"], 3)
+
+    s.card(s.rr(20, 446, 353, 186, 26))
+    s.raw(f'<path d="{s.capsule(40, 464, 118, 28)}" fill="{t["prom_fill"]}"/>')
+    s.text(99, 483, "Тема освоена", 13.5, 700, t["prom_text"], "middle")
+    s.text(40, 520, "Повторю завтра, чтобы запомнилось.", 15.5, 600)
+    review_timeline(s, 560, 0)
+    s.text(40, 616, "5 примеров на каждое повторение", 13, 500, t["sub"])
+
+    s.raw(bit("hint", theme, 50, 676, 0.18))
+    s.card(s.rr(98, 650, 275, 52, 20))
+    s.text(114, 672, "Освоено. Завтра — повтор.", 14.5, 600)
+    s.text(114, 691, "Потом через 3 дня, 7, 14, 30.", 13, 400, t["sub"])
+
+    s.glass(s.capsule(20, 760, 150, 56))
+    s.text(95, 794, "На главную", 16, 600, anchor="middle")
+    s.glass(s.capsule(180, 760, 193, 56), prominent=True)
+    s.text(276.5, 794, "Другая тема", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def home_review(theme):
+    return home(theme, review=True)
+
+
+def topic_review(theme):
+    s = Screen(theme, f"treview-{theme}")
+    t = s.t
+    s.background()
+    s.status_bar()
+    s.glass(s.capsule(20, 58, 44, 44))
+    s.icon("chevron.left", 41, 80)
+    s.text(20, 146, "Одинаковый низ", 30, 700)
+    s.text(20, 168, "5 класс · освоено · точность 96%", 14, 500, t["sub"])
+    s.raw(bit("idle", theme, 345, 138, 0.15))
+
+    s.card(s.rr(20, 186, 353, 290, 26))
+    s.text(40, 214, "Повторение", 17, 700)
+    s.raw(f'<path d="{s.capsule(254, 198, 99, 26)}" fill="none" stroke="{t["ink"]}" stroke-width="1.4"/>')
+    s.icon("repeat", 270, 211, 0.55, t["ink"], 2.6)
+    s.text(310, 216, "сегодня", 13, 600, anchor="middle")
+    review_timeline(s, 256, 2)
+    s.text(40, 320, "Повторы через 1 и 3 дня пройдены.", 14.5, 600)
+    s.text(40, 340, "Сегодня — повтор через 7 дней.", 14.5, 500, t["sub"])
+    s.raw(f'<path d="M40 358 L353 358" stroke="{t["ink"]}" stroke-opacity="0.08"/>')
+    for i, line in enumerate(["Интервалы растут: 1, 3, 7, 14, 30 дней.",
+                              "2 ошибки и больше из 5 — интервал снова",
+                              "короткий, тема вернётся раньше.",
+                              "После 30 дней — раз в два месяца."]):
+        s.text(40, 382 + i * 20, line, 13.5, 500, t["sub"])
+
+    s.card(s.rr(20, 488, 353, 112, 26))
+    s.text(40, 514, "История повторений", 15, 600)
+    for i, (when, res, ok) in enumerate([("6 нояб.", "10/10 · освоено", True), ("7 нояб.", "5/5", True), ("10 нояб.", "4/5", True)]):
+        y = 540 + i * 22
+        s.text(40, y, when, 13.5, 500, t["sub"])
+        s.text(130, y, res, 13.5, 600)
+
+    for i, lab in enumerate(["Урок", "Зачем это нужно"]):
+        y = 612 + i * 52
+        s.card(s.rr(20, y, 353, 44, 18))
+        s.text(40, y + 28, lab, 15, 600)
+        s.icon("chevron.down", 350, y + 22, 0.7, t["sub"])
+
+    s.glass(s.capsule(20, 762, 353, 56), prominent=True)
+    s.icon("repeat", 92, 790, 0.95, t["prom_text"], 2.4)
+    s.text(214, 796, "Повторить · 5 примеров", 17, 600, t["prom_text"], "middle")
+    s.home_indicator()
+    return s
+
+
+def review_sheet():
+    sheet([result_perfect, home_review, topic_review],
+          ["Итоги 10/10: тема освоена, график повторений", "Главная: «Пора повторить»",
+           "Карточка темы: повторение по интервалам"],
+          "Повторение", "screens-review.svg")
+
+
 def sheet(fns, labels, name, filename):
     M, GAP, HEAD = 70, 60, 130
     W = M * 2 + PW * len(fns) + GAP * (len(fns) - 1)
@@ -1558,4 +1687,5 @@ if __name__ == "__main__":
     stats_sheet()
     solve_sheet()
     course_sheet()
+    review_sheet()
     print("ok")
