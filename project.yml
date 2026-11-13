@@ -1,0 +1,59 @@
+name: TallyMath
+options:
+  bundleIdPrefix: com.tallymath
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Приложение в режиме Swift 5: меньше сюрпризов со строгой конкурентностью при сборке без Mac.
+    SWIFT_VERSION: "5.0"
+packages:
+  MathCore:
+    path: Packages/MathCore
+targets:
+  TallyMath:
+    type: application
+    platform: iOS
+    sources:
+      - path: TallyMath
+    dependencies:
+      - package: MathCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tallymath.app
+        PRODUCT_NAME: TallyMath
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Tally
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_PREVIEWS: YES
+  TallyMathTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TallyMathTests
+    dependencies:
+      - target: TallyMath
+      - package: MathCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.tallymath.tests
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TallyMath.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TallyMath"
+schemes:
+  TallyMath:
+    build:
+      targets:
+        TallyMath: all
+        TallyMathTests: [test]
+    test:
+      targets:
+        - TallyMathTests
