@@ -113,6 +113,12 @@ final class AppModel {
         save()
     }
 
+    /// Вводный урок по теме показан — дальше задания этой темы без урока.
+    func markIntroduced(_ topicID: String) {
+        progress.markIntroduced(topicID)
+        save()
+    }
+
     func notUnderstood(_ topicID: String) {
         guard !isDemo else { return }
         progress.recordNotUnderstood(topicID: topicID, day: today)

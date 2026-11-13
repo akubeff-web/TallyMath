@@ -64,6 +64,18 @@ public struct ProgressStore: Codable, Sendable, Hashable {
     public var bestStreak = 0
     /// Факты таблицы умножения «7×8» → последние ответы. Нужно для тепловой карты.
     public var facts: [String: [Bool]] = [:]
+    /// Темы, по которым уже показан вводный урок. Optional — чтобы читались старые сохранения.
+    public var introducedTopics: [String]?
+
+    public func isIntroduced(_ id: String) -> Bool {
+        (introducedTopics ?? []).contains(id) || progress(id).attempts > 0
+    }
+
+    public mutating func markIntroduced(_ id: String) {
+        var list = introducedTopics ?? []
+        if !list.contains(id) { list.append(id) }
+        introducedTopics = list
+    }
 
     public init() {}
 
@@ -193,14 +205,23 @@ public enum SessionPlanner {
         let defs = topicIDs.compactMap(Course.topic)
         guard !defs.isEmpty else { return [] }
         var result: [Problem] = []
+        var seen = Set<String>()
         for _ in 0..<count {
             let def = weightedPick(defs, progress: progress, day: day, rng: &rng)
             var p = def.make(&rng, context)
+            // Внутри сессии пример не повторяется. Если тема совсем маленькая — после многих попыток допускаем повтор,
+            // но не подряд.
             var tries = 0
-            while tries < 8, let last = result.last, last.id == p.id || result.suffix(3).contains(where: { $0.id == p.id }) {
+            while tries < 60, seen.contains(p.id) {
+                p = tries % 10 == 9 ? weightedPick(defs, progress: progress, day: day, rng: &rng).make(&rng, context)
+                                    : def.make(&rng, context)
+                tries += 1
+            }
+            while tries < 80, result.last?.id == p.id {
                 p = def.make(&rng, context)
                 tries += 1
             }
+            seen.insert(p.id)
             result.append(p)
         }
         return result

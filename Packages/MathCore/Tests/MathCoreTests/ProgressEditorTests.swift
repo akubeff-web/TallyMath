@@ -206,3 +206,28 @@ struct StepAnswerTests {
         #expect(StepAnswer.check("(x−3)(x+3)", expected: "(x − 3)(x + 3)") == .correct)
     }
 }
+
+@Suite("Разнообразие примеров")
+struct VarietyTests {
+    @Test func sessionHasNoRepeats() {
+        var rng = RandomSource(seed: 99)
+        for columns in [[2], [2, 5], [7]] {
+            let ctx = TopicContext(columns: columns)
+            let plan = SessionPlanner.plan(topicIDs: ["g5.table"], count: 10, progress: ProgressStore(), day: 0, context: ctx, rng: &rng)
+            #expect(Set(plan.map { $0.id }).count == 10, "столбики \(columns): повторы")
+        }
+        for id in Course.topics.map(\.id) {
+            let plan = SessionPlanner.plan(topicIDs: [id], count: 10, progress: ProgressStore(), day: 0, rng: &rng)
+            #expect(Set(plan.map { $0.id }).count >= 9, "\(id): слишком много повторов")
+        }
+    }
+
+    @Test func introducedTopics() {
+        var s = ProgressStore()
+        #expect(!s.isIntroduced("g6.reduce"))
+        s.markIntroduced("g6.reduce")
+        #expect(s.isIntroduced("g6.reduce"))
+        s.record(topicID: "g5.table", status: .correct, day: 1)
+        #expect(s.isIntroduced("g5.table"))
+    }
+}

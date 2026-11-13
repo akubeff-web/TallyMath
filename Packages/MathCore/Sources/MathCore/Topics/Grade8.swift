@@ -13,19 +13,34 @@ enum Grade8 {
         rule: ["Раскладываем верх и низ на множители.", "Сокращаем одинаковые множители — только множители, не слагаемые.",
                "Помним про ОДЗ: знаменатель не равен нулю."]
     ) { r, ctx in
-        let a = r.int(1...6)
-        let text = "{\(poly("x^2 - \(a * a)"))}/{\(poly("x^2 + \(a)x"))}"
-        let res = "{x − \(a)}/{x}"
+        let a = r.int(1...9)
+        if r.bool() {
+            let text = "{\(poly("x^2 - \(a * a)"))}/{\(poly("x^2 + \(a)x"))}"
+            let res = "{x − \(a)}/{x}"
+            return Problem(
+                topicID: "g8.ratReduce", prompt: "Сократи дробь", statement: st(text), display: st(text).text,
+                expected: st(res), spec: AnswerSpec(.rationalFraction),
+                steps: [
+                    SolutionStep("Раскладываем на множители.", "Верх: (x − \(a))(x + \(a)), низ: x(x + \(a)).",
+                                 line: "= {(x − \(a))(x + \(a))}/{x(x + \(a))}",
+                                 ask: "Разложи x² − \(a * a) на множители.", answer: "(x − \(a))(x + \(a))"),
+                    SolutionStep("Сокращаем общий множитель (x + \(a)).", "Остаётся (x − \(a))/x.", line: "= " + res,
+                                 why: "Делим верх и низ на одно и то же выражение — дробь не меняется (при x ≠ −\(a), x ≠ 0).",
+                                 whyNot: "Нельзя сокращать x² и x — это слагаемые, а не множители."),
+                ])
+        }
+        let k = r.int(2...6)
+        let text = "{\(poly("\(k)x + \(k * a)"))}/{\(poly("x^2 + \(a)x"))}"
+        let res = "{\(k)}/{x}"
         return Problem(
             topicID: "g8.ratReduce", prompt: "Сократи дробь", statement: st(text), display: st(text).text,
             expected: st(res), spec: AnswerSpec(.rationalFraction),
             steps: [
-                SolutionStep("Раскладываем на множители.", "Верх: (x − \(a))(x + \(a)), низ: x(x + \(a)).",
-                             line: "= {(x − \(a))(x + \(a))}/{x(x + \(a))}",
-                             ask: "Разложи x² − \(a * a) на множители.", answer: "(x − \(a))(x + \(a))"),
-                SolutionStep("Сокращаем общий множитель (x + \(a)).", "Остаётся (x − \(a))/x.", line: "= " + res,
-                             why: "Делим верх и низ на одно и то же выражение — дробь не меняется (при x ≠ −\(a), x ≠ 0).",
-                             whyNot: "Нельзя сокращать x² и x — это слагаемые, а не множители."),
+                SolutionStep("Выносим общий множитель в числителе и знаменателе.", "Верх: \(k)(x + \(a)), низ: x(x + \(a)).",
+                             line: "= {\(k)(x + \(a))}/{x(x + \(a))}",
+                             ask: "Вынеси общий множитель: \(poly("\(k)x + \(k * a)")) = ?", answer: "\(k)(x + \(a))"),
+                SolutionStep("Сокращаем (x + \(a)).", "Остаётся \(k)/x.", line: "= " + res,
+                             whyNot: "Сокращать можно только множители: x в \(k)x и x² сокращать нельзя, пока не вынесли скобку."),
             ])
     }
 
@@ -34,19 +49,21 @@ enum Grade8 {
         rule: ["Как с обычными дробями: общий знаменатель, дополнительные множители, складываем числители.",
                "Общий знаменатель — произведение разных множителей знаменателей."]
     ) { r, ctx in
-        let a = r.int(1...5)
-        let text = "{1}/{x} + {1}/{x + \(a)}"
-        let res = "{2x + \(a)}/{x(x + \(a))}"
+        let a = r.int(1...9), p = r.int(1...(ctx.easy ? 1 : 4)), q = r.int(1...(ctx.easy ? 1 : 4))
+        let text = "{\(p)}/{x} + {\(q)}/{x + \(a)}"
+        let top = poly("\(p + q)x + \(p * a)")
+        let res = "{\(top)}/{x(x + \(a))}"
         return Problem(
             topicID: "g8.ratOps", prompt: "Сложи дроби", statement: st(text), display: st(text).text,
             expected: st(res), spec: AnswerSpec(.rationalFraction),
             steps: [
                 SolutionStep("Общий знаменатель x(x + \(a)).", "Дополнительные множители: x + \(a) и x.",
-                             line: "= {x + \(a)}/{x(x + \(a))} + {x}/{x(x + \(a))}",
+                             line: "= {\(p)(x + \(a))}/{x(x + \(a))} + {\(q)x}/{x(x + \(a))}",
                              whyNot: "Складывать знаменатели нельзя — как и у обычных дробей.",
-                             arrows: [Arrow("1/x", "(x + \(a))/(x(x + \(a)))", "×(x + \(a))"), Arrow("1/(x + \(a))", "x/(x(x + \(a)))", "×x")]),
-                SolutionStep("Складываем числители.", "x + \(a) + x = 2x + \(a).", line: "= " + res,
-                             ask: "Чему равен числитель?", answer: "2x + \(a)"),
+                             arrows: [Arrow("\(p)/x", "\(p)(x + \(a))/(x(x + \(a)))", "×(x + \(a))"),
+                                      Arrow("\(q)/(x + \(a))", "\(q)x/(x(x + \(a)))", "×x")]),
+                SolutionStep("Складываем числители.", "\(p)(x + \(a)) + \(q)x = \(top).", line: "= " + res,
+                             ask: "Чему равен числитель?", answer: top),
             ])
     }
 

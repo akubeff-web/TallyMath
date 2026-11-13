@@ -16,9 +16,9 @@ enum Grade6 {
         rule: ["НОД — наибольшее число, на которое делятся оба числа.", "Раскладываем оба числа на простые множители.",
                "Перемножаем общие множители."]
     ) { r, ctx in
-        let g = r.pick(ctx.easy ? [2, 3, 4, 5, 6] : [4, 6, 8, 9, 12, 14, 15, 18])
-        var p = r.pick([2, 3, 5, 7]), q = r.pick([3, 4, 5, 7, 11])
-        if gcd(p, q) > 1 || p == q { (p, q) = (3, 4) }
+        let g = r.int(ctx.easy ? 2...6 : 3...18)
+        var p = r.int(2...(ctx.easy ? 5 : 9)), q = r.int(2...(ctx.easy ? 7 : 11))
+        while gcd(p, q) != 1 || p == q { q = r.int(2...11) }
         let a = g * p, b = g * q
         let fa = primeFactors(a), fb = primeFactors(b)
         var rest = fb
@@ -43,8 +43,12 @@ enum Grade6 {
         rule: ["НОК — наименьшее число, которое делится на оба числа.", "Берём разложение большего числа и добавляем недостающие множители меньшего.",
                "Быстрая проверка: НОК · НОД = a · b."]
     ) { r, ctx in
-        let pairs = ctx.easy ? [(4, 6), (6, 8), (3, 4), (6, 9), (10, 15)] : [(12, 18), (8, 12), (14, 21), (15, 20), (16, 24), (9, 12), (10, 25)]
-        let (a, b) = r.pick(pairs)
+        var a = 4, b = 6
+        for _ in 0..<50 {
+            a = r.int(ctx.easy ? 3...12 : 4...30)
+            b = r.int(ctx.easy ? 3...12 : 4...30)
+            if a != b, gcd(a, b) > 1, a % b != 0, b % a != 0, (try? lcm(a, b)) ?? 999 <= (ctx.easy ? 60 : 180) { break }
+        }
         let l = (try? lcm(a, b)) ?? a * b
         let big = max(a, b), small = min(a, b)
         return Problem(
@@ -66,7 +70,12 @@ enum Grade6 {
         rule: ["Делим на самое маленькое простое число, пока делится: 2, потом 3, 5, 7…", "Записываем все делители через точку.",
                "Одинаковые множители можно записать степенью: 2 · 2 · 2 = 2³."]
     ) { r, ctx in
-        let n = r.pick(ctx.easy ? [12, 18, 20, 28, 30] : [36, 48, 60, 72, 84, 90, 96, 120, 126, 150])
+        var n = 12
+        for _ in 0..<50 {
+            n = r.int(ctx.easy ? 12...40 : 30...240)
+            let fs = primeFactors(n)
+            if fs.count >= 3 && fs.allSatisfy({ $0 <= 13 }) { break }
+        }
         let fs = primeFactors(n)
         var lines: [SolutionStep] = []
         var m = n
@@ -119,8 +128,12 @@ enum Grade6 {
         rule: ["Общий низ — наименьшее общее кратное низов.", "Каждую дробь умножаем — верх и низ — на свой дополнительный множитель.",
                "Складываем верхи, сокращаем, выделяем целую часть."]
     ) { r, ctx in
-        let pairs = ctx.easy ? [(2, 3), (3, 4), (2, 5)] : [(4, 6), (6, 8), (6, 9), (4, 10), (8, 12), (9, 12), (10, 15), (3, 4), (5, 6), (4, 7)]
-        let (b, d) = r.pick(pairs)
+        var b = 3, d = 4
+        for _ in 0..<50 {
+            b = r.int(2...(ctx.easy ? 6 : 12))
+            d = r.int(2...(ctx.easy ? 6 : 12))
+            if b != d, b % d != 0, d % b != 0, (try? lcm(b, d)) ?? 999 <= (ctx.easy ? 30 : 72) { break }
+        }
         return fractionProblem("g6.addGen", r.int(1...(b - 1)), b, r.int(1...(d - 1)), d, minus: false)
     }
 
@@ -128,8 +141,12 @@ enum Grade6 {
         "g6.sub", .six, section: "Обыкновенные дроби", title: "Вычитание дробей с разным низом",
         rule: ["Приводим к общему низу — как при сложении.", "Вычитаем верхи, низ оставляем.", "Сокращаем, если можно."]
     ) { r, ctx in
-        let pairs = ctx.easy ? [(2, 4), (3, 6), (2, 3)] : [(3, 4), (4, 6), (6, 8), (5, 6), (6, 9), (2, 5), (4, 10)]
-        let (b, d) = r.pick(pairs)
+        var b = 3, d = 4
+        for _ in 0..<50 {
+            b = r.int(2...(ctx.easy ? 6 : 12))
+            d = r.int(2...(ctx.easy ? 6 : 12))
+            if b != d, (try? lcm(b, d)) ?? 999 <= (ctx.easy ? 24 : 60) { break }
+        }
         var a = r.int(1...(b - 1)), c = r.int(1...(d - 1))
         if a * d <= c * b { (a, c) = (b - 1, 1) }
         if a * d <= c * b { return fractionProblem("g6.sub", c, d, a, b, minus: false) }
@@ -215,7 +232,7 @@ enum Grade6 {
         rule: ["Число по его проценту: если p% — это a, то всё число = a : p · 100.",
                "Сколько процентов a от b: a : b · 100%."]
     ) { r, ctx in
-        let p = r.pick([5, 10, 20, 25, 40, 50]), n = r.pick([40, 60, 80, 120, 200, 300])
+        let p = r.pick([5, 10, 15, 20, 25, 30, 40, 50, 60, 75]), n = 20 * r.int(1...30)
         let part = n * p / 100
         if r.bool() {
             return Problem(

@@ -12,10 +12,12 @@ enum Grade5 {
         rule: ["a × b — это a, взятое b раз.", "Если факт забылся, иди от соседнего: a × b = a × (b − 1) + a.",
                "Деление — обратное умножению: c : a = b, потому что a × b = c."]
     ) { r, ctx in
-        let a = r.pick(ctx.columns)
-        let b = r.int(ctx.easy ? 2...5 : 2...9)
+        let column = r.pick(ctx.columns)
+        let other = r.int(ctx.easy ? 2...5 : 2...10)
+        // Столбик может стоять и первым, и вторым множителем: 6 × 7 и 7 × 6.
+        let (a, b) = r.bool() ? (column, other) : (other, column)
         let product = a * b
-        if r.bool() {
+        if r.int(0...2) < 2 {
             let known = b > 2 ? a * (b - 1) : a
             return Problem(
                 topicID: "g5.table", prompt: "Вычисли", statement: st("\(a) × \(b)"), display: "\(a) × \(b)",
@@ -316,8 +318,8 @@ enum Grade5 {
         "g5.percent", .five, section: "Проценты", title: "Процент от числа",
         rule: ["1% — это одна сотая часть числа.", "p% от N = N : 100 · p."]
     ) { r, ctx in
-        let p = r.pick(ctx.easy ? [10, 20, 50, 25] : [5, 10, 15, 20, 25, 30, 40, 75])
-        let n = r.pick([40, 60, 80, 120, 200, 240, 300, 400, 500, 600])
+        let p = r.pick(ctx.easy ? [10, 20, 25, 50] : [5, 10, 15, 20, 25, 30, 40, 60, 75, 80])
+        let n = 20 * r.int(ctx.easy ? 1...10 : 1...50)
         let result = Rational.of(n * p, 100)
         return Problem(
             topicID: "g5.percent", prompt: "Найди \(p)% от \(n)", statement: st("\(p)% · \(n)"), display: "\(p)% от \(n)",
