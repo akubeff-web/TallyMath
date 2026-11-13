@@ -30,7 +30,9 @@ for theme in light dark; do
     xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
     xcrun simctl launch "$UDID" "$BUNDLE" -previewScreen "$screen" -previewState "$state" -demoData YES >/dev/null
     sleep 4
-    xcrun simctl io "$UDID" screenshot "$OUT/${theme}-${screen}-${state}.png" >/dev/null
+    # У устройств с двумя экранами simctl просит указать экран — тогда снимаем основной.
+    xcrun simctl io "$UDID" screenshot "$OUT/${theme}-${screen}-${state}.png" >/dev/null 2>&1 \
+      || xcrun simctl io "$UDID" screenshot --display=1 "$OUT/${theme}-${screen}-${state}.png" >/dev/null
     echo "снято: ${theme}-${screen}-${state}"
   done
 done

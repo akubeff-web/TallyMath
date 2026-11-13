@@ -247,7 +247,7 @@ struct StepDetail: View {
                 Label { Text(whyNot).font(.subheadline) } icon: { Image(systemName: "xmark.circle") }
             }
             if let check = step.check {
-                Label { Text("Проверка: ").font(.subheadline.weight(.semibold)) + Text(check).font(.subheadline) }
+                Label { Text("\(Text("Проверка: ").bold())\(check)").font(.subheadline) }
                     icon: { Image(systemName: "checkmark") }
             }
         }
