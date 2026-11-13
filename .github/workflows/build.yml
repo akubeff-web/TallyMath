@@ -50,7 +50,7 @@ jobs:
       - name: Выбрать симулятор
         id: sim
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 scripts/pick_simulator.py)
+          UDID=$(python3 scripts/pick_simulator.py)
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Тесты приложения на симуляторе
