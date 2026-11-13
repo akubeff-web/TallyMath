@@ -5,6 +5,11 @@ on:
     branches: [main]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Тег релиза (например v0.1.0). Пусто — без релиза."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -84,10 +89,14 @@ jobs:
           name: TallyMath-ipa
           path: TallyMath.ipa
 
+      # Release: при пуше тега v* или при ручном запуске с полем release_tag (тег создастся сам).
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          name: TallyMath ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: TallyMath.ipa
 
       # Скриншоты — последними и не роняют сборку: главное — .ipa.
