@@ -3,6 +3,12 @@
 /// «x₁ = 2 или x₂ = 3», «(−∞; 2]», «нет решений», «любое число», «7 ост. 2», «2x + y = 5; x − y = 1».
 public enum Parser {
     public static func statement(_ text: String) throws -> Statement {
+        // «x = (5 ± 1)/2» — это два корня сразу.
+        if text.contains("±") {
+            let plus = try statement(String(text.map { $0 == "±" ? "+" : $0 }))
+            let minus = try statement(String(text.map { $0 == "±" ? "−" : $0 }))
+            return .either([plus, minus])
+        }
         var p = try State(tokens: Tokenizer.tokenize(text))
         let s = try p.parseTop()
         guard p.atEnd else { throw MathError.syntax("лишние символы: \(p.peek.text)") }
@@ -348,7 +354,14 @@ private struct State {
         let base = try parsePostfix()
         if isSymbol("^") {
             _ = next()
-            let exponent = try parseUnaryPowerOperand()
+            var exponent = try parseUnaryPowerOperand()
+            // «x²» приходит как x^(2): скобки вокруг числа не нужны.
+            if case .group(let inner) = exponent {
+                switch inner {
+                case .integer, .neg(.integer): exponent = inner
+                default: break
+                }
+            }
             return .pow(base, exponent)
         }
         return base
